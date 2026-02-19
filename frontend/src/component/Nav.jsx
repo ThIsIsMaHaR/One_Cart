@@ -10,7 +10,7 @@ import axios from 'axios';
 
 // Context Imports
 import { userDataContext } from '../context/UserContext';
-import { authDataContext } from '../context/authContext';
+import { authDataContext } from '../context/AuthContext';
 import { shopDataContext } from '../context/ShopContext';
 
 function Nav() {

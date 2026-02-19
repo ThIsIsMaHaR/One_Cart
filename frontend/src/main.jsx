@@ -3,19 +3,23 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.jsx'
 import { BrowserRouter } from 'react-router-dom'
-import { AuthContextProvider } from './context/AuthContext.jsx';
+
+// Import names must match the "export default" from the files
+import AuthContextProvider from './context/AuthContext.jsx'; 
 import UserContext from './context/UserContext.jsx'
 import ShopContext from './context/ShopContext.jsx'
 
 createRoot(document.getElementById('root')).render(
-  <BrowserRouter>
-  <AuthContext>
-    <UserContext>
-      <ShopContext>
-    <App />
-    </ShopContext>
-    </UserContext>
-    </AuthContext>
-</BrowserRouter>
-  
+  <StrictMode>
+    <BrowserRouter>
+      {/* Auth MUST be on the outside because UserContext needs its serverUrl */}
+      <AuthContextProvider> 
+        <UserContext>
+          <ShopContext>
+            <App />
+          </ShopContext>
+        </UserContext>
+      </AuthContextProvider>
+    </BrowserRouter>
+  </StrictMode>
 )
