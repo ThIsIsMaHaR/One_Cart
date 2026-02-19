@@ -2,9 +2,9 @@
   "name": "onecart",
   "version": "1.0.0",
   "description": "Fullstack OneCart Deployment",
-  "main": "server.js",
+  "main": "backend/index.js",
   "scripts": {
-    "start": "node server.js",
+    "start": "node backend/index.js",
     "build": "npm install && cd frontend && npm install && npm run build"
   },
   "dependencies": {
