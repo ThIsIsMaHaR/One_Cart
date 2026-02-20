@@ -28,21 +28,33 @@ app.use(cors({
   credentials: true
 }));
 
-// API Routes
+// --- 1. API ROUTES (Data stays at the top) ---
 app.use("/api/auth", authRoutes)
 app.use("/api/user", userRoutes)
 app.use("/api/product", productRoutes)
 app.use("/api/cart", cartRoutes)
 app.use("/api/order", orderRoutes)
 
-// Serve Static Files
+
+// --- 2. ADMIN PANEL DEPLOYMENT ---
+// This serves the Admin dashboard when you go to /admin
+const adminPath = path.resolve(__dirname, "..", "admin", "dist");
+app.use("/admin", express.static(adminPath));
+
+app.get("/admin*", (req, res) => {
+  res.sendFile(path.join(adminPath, "index.html"));
+});
+
+
+// --- 3. USER FRONTEND DEPLOYMENT ---
+// This serves the main shop for everything else
 const frontendPath = path.resolve(__dirname, "..", "frontend", "dist");
 app.use(express.static(frontendPath));
 
-// Catch-all Route: Serves index.html for React Router
 app.get("*", (req, res) => {
   res.sendFile(path.join(frontendPath, "index.html"));
 });
+
 
 app.listen(port, () => {
   console.log(`Server running on port ${port}`)

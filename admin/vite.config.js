@@ -5,6 +5,9 @@ import tailwindcss from '@tailwindcss/vite'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), tailwindcss()],
-  
-  
+  // This tells Vite that the app is hosted at /admin
+  base: '/admin/', 
+  build: {
+    outDir: 'dist',
+  }
 })
