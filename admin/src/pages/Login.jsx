@@ -1,4 +1,4 @@
-import React, { useContext, useState } from 'react'
+import React, { useContext, useState, useEffect } from 'react'
 import logo from '../assets/logo.png'
 import { IoEyeOutline } from "react-icons/io5";
 import { IoEye } from "react-icons/io5";
@@ -13,36 +13,40 @@ function Login() {
   let [email, setEmail] = useState("")
   let [password, setPassword] = useState("")
   
-  // serverUrl is kept here for context, but we will use a relative path in the request
   let { serverUrl } = useContext(authDataContext)
   let { adminData, getAdmin } = useContext(adminDataContext)
   let navigate = useNavigate()
   const [loading, setLoading] = useState(false)
 
+  // 1. AUTOMATIC REDIRECT: If adminData becomes available, move to dashboard
+  useEffect(() => {
+    if (adminData) {
+      navigate("/")
+    }
+  }, [adminData, navigate])
+
   const AdminLogin = async (e) => {
     setLoading(true)
     e.preventDefault()
     try {
-      // FIX: Using relative path '/api/auth/adminlogin' 
-      // This ensures it hits your Render backend regardless of the domain name.
+      // Use relative path for Render deployment
       const result = await axios.post('/api/auth/adminlogin', { email, password }, { withCredentials: true })
       
-      console.log("Login Success:", result.data)
-      toast.success("Admin Login Successful")
-      
-      if (getAdmin) {
-        await getAdmin()
+      if (result.data) {
+        console.log("Login Success:", result.data)
+        toast.success("Admin Login Successful")
+        
+        // 2. REFRESH DATA: Fetch the admin profile into Context
+        if (getAdmin) {
+          await getAdmin()
+        }
+        // Note: The useEffect above will handle the navigate("/") once data is loaded
       }
-      
-      navigate("/")
-      setLoading(false)
     } catch (error) {
       console.error("Detailed Login Error:", error.response?.data || error.message)
-      
-      // Shows the specific error from your backend (e.g., "Invalid Credentials")
       const errorMsg = error.response?.data?.message || "Admin Login Failed"
       toast.error(errorMsg)
-      
+    } finally {
       setLoading(false)
     }
   }
@@ -89,6 +93,7 @@ function Login() {
             </div>
 
             <button 
+              type="submit"
               disabled={loading}
               className='w-[100%] h-[50px] bg-[#6060f5] hover:bg-[#4e4ef0] transition-colors rounded-lg flex items-center justify-center mt-[20px] text-[17px] font-semibold disabled:opacity-50'
             >
