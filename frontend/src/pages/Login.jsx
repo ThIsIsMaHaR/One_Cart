@@ -6,7 +6,7 @@ import { authDataContext } from '../context/AuthContext';
 import { userDataContext } from '../context/UserContext';
 import axios from 'axios';
 import Loading from '../component/Loading';
-import { toast } from 'react-toastify'; // Fixed: Using your existing library
+import { toast } from 'react-toastify';
 
 function Login() {
     let [show, setShow] = useState(false)
@@ -19,28 +19,36 @@ function Login() {
     let navigate = useNavigate()
 
     const handleLogin = async (e) => {
-        setLoading(true)
         e.preventDefault()
+        setLoading(true)
+        
         try {
-            // This hits YOUR Node.js server (e.g., localhost:8000)
-            let result = await axios.post(serverUrl + '/api/auth/login', {
-                email, password
+            // hitting the backend with correct credentials
+            const result = await axios.post(`${serverUrl}/api/auth/login`, {
+                email, 
+                password
             }, { withCredentials: true })
 
-            console.log("Login Success:", result.data)
-            setLoading(false)
-            
-            // This updates your global user state
-            getCurrentUser() 
-            
-            navigate("/")
-            toast.success("User Login Successful")
+            if (result.data) {
+                console.log("Login Success:", result.data)
+                
+                // 1. Update the user state
+                await getCurrentUser() 
+                
+                // 2. Small timeout ensures State is updated before we jump pages
+                setTimeout(() => {
+                    setLoading(false)
+                    toast.success("User Login Successful")
+                    navigate("/")
+                }, 500)
+            }
 
         } catch (error) {
             setLoading(false)
             console.error("Login Error:", error)
-            // If the backend sends a specific message, we show it, otherwise a default
-            const errorMsg = error.response?.data?.message || "User Login Failed"
+            
+            // Handle the 400 error or other response errors
+            const errorMsg = error.response?.data?.message || "Invalid Email or Password"
             toast.error(errorMsg)
         }
     }
@@ -61,7 +69,7 @@ function Login() {
 
             {/* Login Form Card */}
             <div className='max-w-[600px] w-[90%] h-[400px] bg-[#00000025] border-[1px] border-[#96969635] backdrop-blur-2xl rounded-lg shadow-lg flex items-center justify-center '>
-                <form action="" onSubmit={handleLogin} className='w-[90%] h-[90%] flex flex-col items-center justify-start gap-[20px]'>
+                <form onSubmit={handleLogin} className='w-[90%] h-[90%] flex flex-col items-center justify-start gap-[20px]'>
                     
                     {/* Input Fields Container */}
                     <div className='w-[90%] flex flex-col items-center justify-center gap-[15px] relative mt-10'>
@@ -69,7 +77,7 @@ function Login() {
                         {/* Email Input */}
                         <input 
                             type="email" 
-                            className='w-[100%] h-[50px] border-[2px] border-[#96969635] bg-transparent rounded-lg px-[20px] placeholder-[#ffffffc7] font-semibold' 
+                            className='w-[100%] h-[50px] border-[2px] border-[#96969635] bg-transparent rounded-lg px-[20px] placeholder-[#ffffffc7] font-semibold outline-none focus:border-[#6060f5]' 
                             placeholder='Email' 
                             required 
                             onChange={(e) => setEmail(e.target.value)} 
@@ -80,7 +88,7 @@ function Login() {
                         <div className="w-full relative">
                             <input 
                                 type={show ? "text" : "password"} 
-                                className='w-[100%] h-[50px] border-[2px] border-[#96969635] bg-transparent rounded-lg px-[20px] placeholder-[#ffffffc7] font-semibold' 
+                                className='w-[100%] h-[50px] border-[2px] border-[#96969635] bg-transparent rounded-lg px-[20px] placeholder-[#ffffffc7] font-semibold outline-none focus:border-[#6060f5]' 
                                 placeholder='Password' 
                                 required 
                                 onChange={(e) => setPassword(e.target.value)} 
@@ -104,8 +112,8 @@ function Login() {
                         </button>
                         
                         {/* Footer Link */}
-                        <p className='flex gap-[10px] mt-2'>
-                            You haven't any account? 
+                        <p className='flex gap-[10px] mt-2 text-sm'>
+                            Don't have an account? 
                             <span 
                                 className='text-[#5555f6cf] font-semibold cursor-pointer hover:underline' 
                                 onClick={() => navigate("/signup")}
