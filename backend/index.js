@@ -9,12 +9,8 @@ import productRoutes from './routes/productRoutes.js'
 import cartRoutes from './routes/cartRoutes.js'
 import orderRoutes from './routes/orderRoutes.js'
 import path from 'path'
-import { fileURLToPath } from 'url'
 
 dotenv.config()
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 const port = process.env.PORT || 10000
 const app = express()
@@ -23,7 +19,7 @@ const app = express()
 app.use(express.json())
 app.use(cookieParser())
 
-// Since frontend and backend are on the same domain, we use simple CORS
+// Updated CORS for same-domain deployment
 app.use(cors({
   origin: true, 
   credentials: true
@@ -37,14 +33,20 @@ app.use("/api/cart", cartRoutes)
 app.use("/api/order", orderRoutes)
 
 // 3. Serve Static Files (Frontend build)
-// This path moves from 'backend' to the root, then into 'frontend/dist'
-const frontendPath = path.resolve(__dirname, "..", "frontend", "dist");
+// process.cwd() ensures we start from the project root folder
+const frontendPath = path.join(process.cwd(), "frontend", "dist");
+
+// Check if static files are being served
 app.use(express.static(frontendPath));
 
 // 4. Catch-all Route
-// This ensures React Router works and handles page refreshes
+// This MUST be the last route. It serves index.html for any non-API request.
 app.get("*", (req, res) => {
-  res.sendFile(path.join(frontendPath, "index.html"));
+  res.sendFile(path.join(frontendPath, "index.html"), (err) => {
+    if (err) {
+      res.status(500).send("Frontend build not found. Verify that 'frontend/dist' exists.");
+    }
+  });
 });
 
 // Start Server
