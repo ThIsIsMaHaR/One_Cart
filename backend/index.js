@@ -16,37 +16,37 @@ dotenv.config()
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-let port = process.env.PORT || 10000
-let app = express()
+const port = process.env.PORT || 10000
+const app = express()
 
-// Middleware
+// 1. ABSOLUTE CORS FIX (Paste this exactly)
+app.use(cors({
+  origin: true, // This automatically mirrors the origin of the request
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "Accept", "X-Requested-With"]
+}));
+
+// Explicitly handle preflight requests for all routes
+app.options('*', cors());
+
+// 2. Middlewares
 app.use(express.json())
 app.use(cookieParser())
-app.use(cors({
-  origin: ["http://localhost:5173", "http://localhost:5174", "https://onecart-62p0.onrender.com"],
-  credentials: true
-}))
 
-// 1. API Routes
+// 3. API Routes
 app.use("/api/auth", authRoutes)
 app.use("/api/user", userRoutes)
 app.use("/api/product", productRoutes)
 app.use("/api/cart", cartRoutes)
 app.use("/api/order", orderRoutes)
 
-// 2. Serve Static Files
-// This path moves up from 'backend' to root, then into 'frontend/dist'
+// 4. Serving Frontend
 const frontendPath = path.resolve(__dirname, "..", "frontend", "dist");
 app.use(express.static(frontendPath));
 
-// 3. Catch-all Route
 app.get("*", (req, res) => {
-  res.sendFile(path.join(frontendPath, "index.html"), (err) => {
-    if (err) {
-      // If the file is missing, the build failed or path is wrong
-      res.status(500).send("Frontend build not found. Please check Render build logs.");
-    }
-  });
+  res.sendFile(path.join(frontendPath, "index.html"));
 });
 
 // Start Server
