@@ -16,14 +16,14 @@ dotenv.config()
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-let port = process.env.PORT || 6000
+let port = process.env.PORT || 10000
 let app = express()
 
 // Middleware
 app.use(express.json())
 app.use(cookieParser())
 app.use(cors({
-  origin: ["http://localhost:5173", "http://localhost:5174", "https://one-cart-m543.onrender.com"],
+  origin: ["http://localhost:5173", "http://localhost:5174", "https://onecart-62p0.onrender.com"],
   credentials: true
 }))
 
@@ -35,14 +35,18 @@ app.use("/api/cart", cartRoutes)
 app.use("/api/order", orderRoutes)
 
 // 2. Serve Static Files
-// Note: On Render, the path needs to be exactly right based on your folder structure
-const frontendPath = path.join(__dirname, "../../frontend/dist"); 
+// This path moves up from 'backend' to root, then into 'frontend/dist'
+const frontendPath = path.resolve(__dirname, "..", "frontend", "dist");
 app.use(express.static(frontendPath));
 
-// 3. The Catch-all Route
-// If the request doesn't match an API route or a static file, serve index.html
+// 3. Catch-all Route
 app.get("*", (req, res) => {
-  res.sendFile(path.join(frontendPath, "index.html"));
+  res.sendFile(path.join(frontendPath, "index.html"), (err) => {
+    if (err) {
+      // If the file is missing, the build failed or path is wrong
+      res.status(500).send("Frontend build not found. Please check Render build logs.");
+    }
+  });
 });
 
 // Start Server
