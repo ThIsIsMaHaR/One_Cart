@@ -3,9 +3,9 @@ import React, { createContext } from 'react'
 export const authDataContext = createContext()
 
 function AuthContextProvider({ children }) {
-    // This looks for an environment variable called VITE_SERVER_URL.
-    // If it doesn't find one (like on your laptop), it defaults to localhost.
-    const serverUrl = import.meta.env.VITE_SERVER_URL || "http://localhost:8000"
+    // UPDATED: The default now points to your LIVE Render URL
+    // This ensures that even if the environment variable is missing, it talks to the right server.
+    const serverUrl = import.meta.env.VITE_SERVER_URL || "https://onecart-62p0.onrender.com"
 
     let value = {
         serverUrl
