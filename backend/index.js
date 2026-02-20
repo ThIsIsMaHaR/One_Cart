@@ -22,6 +22,7 @@ const app = express()
 app.use(express.json())
 app.use(cookieParser())
 
+// Allow same-origin requests
 app.use(cors({
   origin: true, 
   credentials: true
@@ -36,18 +37,11 @@ app.use("/api/order", orderRoutes)
 
 // Serve Static Files
 const frontendPath = path.resolve(__dirname, "..", "frontend", "dist");
-
-// DEBUG LOG: This will show up in your Render logs to help us
-console.log("Looking for frontend at:", frontendPath);
-
 app.use(express.static(frontendPath));
 
+// Catch-all Route: Serves index.html for React Router
 app.get("*", (req, res) => {
-  res.sendFile(path.join(frontendPath, "index.html"), (err) => {
-    if (err) {
-      res.status(500).send("Frontend build not found. Path checked: " + frontendPath);
-    }
-  });
+  res.sendFile(path.join(frontendPath, "index.html"));
 });
 
 app.listen(port, () => {

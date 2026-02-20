@@ -3,7 +3,7 @@ import React, { createContext } from 'react'
 export const authDataContext = createContext()
 
 function AuthContextProvider({ children }) {
-    const serverUrl = "/api" 
+    const serverUrl = ""; 
 
     const value = {
         serverUrl
