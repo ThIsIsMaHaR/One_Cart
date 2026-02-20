@@ -10,7 +10,6 @@ import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 function App() {
-  // Pull adminData and the getAdmin function from context
   const { adminData, getAdmin } = useContext(adminDataContext);
   const [checkingAuth, setCheckingAuth] = useState(true);
 
@@ -23,15 +22,12 @@ function App() {
       } catch (error) {
         console.error("Auth check failed", error);
       } finally {
-        // Once the API call is done, we stop "loading"
         setCheckingAuth(false);
       }
     };
     verifyAdmin();
   }, [getAdmin]);
 
-  // 1. Show a loading screen while checking if the user is logged in
-  // This prevents the "flash" of the login page on refresh
   if (checkingAuth) {
     return (
       <div className="w-full h-screen flex items-center justify-center bg-[#0c2025] text-white">
@@ -44,21 +40,24 @@ function App() {
     <>
       <ToastContainer />
       
-      {/* 2. If no admin data, only show Login. If logged in, show the Dashboard Routes */}
-      {!adminData ? (
-        <Routes>
+      <Routes>
+        {/* If not logged in, any path shows Login */}
+        {!adminData ? (
           <Route path="*" element={<Login />} />
-        </Routes>
-      ) : (
-        <Routes>
-          <Route path='/' element={<Home />} />
-          <Route path='/add' element={<Add />} />
-          <Route path='/lists' element={<Lists />} />
-          <Route path='/orders' element={<Orders />} />
-          {/* Redirect from login back to home if already logged in */}
-          <Route path='/login' element={<Navigate to="/" />} />
-        </Routes>
-      )}
+        ) : (
+          <>
+            {/* When logged in, handle paths relative to /admin */}
+            <Route path='/' element={<Home />} />
+            <Route path='/add' element={<Add />} />
+            <Route path='/lists' element={<Lists />} />
+            <Route path='/orders' element={<Orders />} />
+            {/* If they try to go to login while logged in, send home */}
+            <Route path='/login' element={<Navigate to="/" />} />
+            {/* Catch-all for logged in users to prevent white screen */}
+            <Route path="*" element={<Navigate to="/" />} />
+          </>
+        )}
+      </Routes>
     </>
   )
 }
