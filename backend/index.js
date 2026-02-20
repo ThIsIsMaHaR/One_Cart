@@ -13,7 +13,6 @@ import { fileURLToPath } from 'url'
 
 dotenv.config()
 
-// Required for ES Modules to handle directory paths
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -28,7 +27,7 @@ app.use(cors({
   credentials: true
 }))
 
-// 1. API Routes (Must come first)
+// 1. API Routes
 app.use("/api/auth", authRoutes)
 app.use("/api/user", userRoutes)
 app.use("/api/product", productRoutes)
@@ -36,13 +35,14 @@ app.use("/api/cart", cartRoutes)
 app.use("/api/order", orderRoutes)
 
 // 2. Serve Static Files
-// This points to your frontend build folder
-app.use(express.static(path.join(__dirname, "../frontend/dist")));
+// Note: On Render, the path needs to be exactly right based on your folder structure
+const frontendPath = path.join(__dirname, "../../frontend/dist"); 
+app.use(express.static(frontendPath));
 
-// 3. FIX FOR EXPRESS 5: Named Wildcard Catch-all
-// We use {*any} because Express 5.x no longer accepts a plain "*"
-app.get("/{*any}", (req, res) => {
-  res.sendFile(path.join(__dirname, "../frontend/dist", "index.html"));
+// 3. The Catch-all Route
+// If the request doesn't match an API route or a static file, serve index.html
+app.get("*", (req, res) => {
+  res.sendFile(path.join(frontendPath, "index.html"));
 });
 
 // Start Server
