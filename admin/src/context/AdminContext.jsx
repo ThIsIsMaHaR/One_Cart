@@ -7,23 +7,24 @@ export const adminDataContext = createContext()
 function AdminContext({children}) {
     let [adminData, setAdminData] = useState(null)
     
-    // We still get serverUrl from AuthContext, 
-    // but we can also define it here specifically for Admin if needed.
+    // We keep serverUrl for compatibility, but for Render, 
+    // we use relative paths (starting with /api)
     let { serverUrl } = useContext(authDataContext)
-
-    // PRO TIP: Use this line to ensure you're always hitting the right URL
-    const finalUrl = import.meta.env.VITE_BACKEND_URL || serverUrl || "http://localhost:8000";
 
     const getAdmin = async () => {
       try {
-          // Changed 'serverUrl' to 'finalUrl'
-          let result = await axios.get(finalUrl + "/api/user/getadmin", { withCredentials: true })
+          // FIX: Removed finalUrl. Using a relative path works best on Render.
+          // ALSO: Ensure this path (/api/user/getadmin) matches your backend route!
+          let result = await axios.get("/api/user/getadmin", { withCredentials: true })
 
-          setAdminData(result.data)
-          console.log("Admin Data Loaded:", result.data)
+          // Check if result.data exists and contains the admin info
+          if (result.data) {
+              setAdminData(result.data)
+              console.log("Admin Data Loaded:", result.data)
+          }
       } catch (error) {
           setAdminData(null)
-          console.log("Admin Fetch Error:", error)
+          console.log("Admin Fetch Error (Not logged in):", error.response?.status)
       }
     }
 
