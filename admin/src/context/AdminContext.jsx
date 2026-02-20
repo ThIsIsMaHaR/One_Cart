@@ -1,38 +1,41 @@
-import React, { createContext, useContext, useEffect, useState } from 'react'
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react'
 import { authDataContext } from './AuthContext'
 import axios from 'axios'
 
 export const adminDataContext = createContext()
 
 function AdminContext({children}) {
-    let [adminData, setAdminData] = useState(null)
-    
-    // We keep serverUrl for compatibility, but for Render, 
-    // we use relative paths (starting with /api)
-    let { serverUrl } = useContext(authDataContext)
+    const [adminData, setAdminData] = useState(null)
+    const { serverUrl } = useContext(authDataContext)
 
-    const getAdmin = async () => {
+    // 1. Wrap in useCallback to prevent the function from being "re-created" 
+    // every time the component renders. This stops loops.
+    const getAdmin = useCallback(async () => {
       try {
-          // FIX: Removed finalUrl. Using a relative path works best on Render.
-          // ALSO: Ensure this path (/api/user/getadmin) matches your backend route!
-          let result = await axios.get("/api/user/getadmin", { withCredentials: true })
+          const result = await axios.get("/api/user/getadmin", { withCredentials: true })
 
-          // Check if result.data exists and contains the admin info
           if (result.data) {
-              setAdminData(result.data)
+              // 2. Only update state if the data is actually different
+              setAdminData(prev => {
+                if (JSON.stringify(prev) === JSON.stringify(result.data)) return prev;
+                return result.data;
+              })
               console.log("Admin Data Loaded:", result.data)
           }
       } catch (error) {
           setAdminData(null)
           console.log("Admin Fetch Error (Not logged in):", error.response?.status)
       }
-    }
+    }, []) 
 
     useEffect(() => {
-      getAdmin()
-    }, [])
+      // Only fetch if we don't already have the data
+      if (!adminData) {
+        getAdmin()
+      }
+    }, [getAdmin, adminData])
 
-    let value = {
+    const value = {
         adminData, setAdminData, getAdmin
     }
 

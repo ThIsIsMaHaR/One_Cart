@@ -22,13 +22,19 @@ const app = express()
 app.use(express.json())
 app.use(cookieParser())
 
-// Allow same-origin requests
+// --- 1. ENHANCED CORS SETUP ---
+// This allows both your main frontend and your backend/admin URL to talk to each other
 app.use(cors({
-  origin: true, 
-  credentials: true
+  origin: [
+    'https://e-comm-onecart.onrender.com', 
+    'https://onecart-62p0.onrender.com'
+  ],
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  allowedHeaders: ["Content-Type", "Authorization"]
 }));
 
-// --- 1. API ROUTES (Data stays at the top) ---
+// --- 2. API ROUTES ---
 app.use("/api/auth", authRoutes)
 app.use("/api/user", userRoutes)
 app.use("/api/product", productRoutes)
@@ -36,22 +42,25 @@ app.use("/api/cart", cartRoutes)
 app.use("/api/order", orderRoutes)
 
 
-// --- 2. ADMIN PANEL DEPLOYMENT ---
-// This serves the Admin dashboard when you go to /admin
+// --- 3. ADMIN PANEL DEPLOYMENT ---
 const adminPath = path.resolve(__dirname, "..", "admin", "dist");
 app.use("/admin", express.static(adminPath));
 
-app.get("/admin*", (req, res) => {
+// Fix: This ensures refreshing any admin page works correctly
+app.get("/admin/*", (req, res) => {
   res.sendFile(path.join(adminPath, "index.html"));
 });
 
 
-// --- 3. USER FRONTEND DEPLOYMENT ---
-// This serves the main shop for everything else
+// --- 4. USER FRONTEND DEPLOYMENT ---
 const frontendPath = path.resolve(__dirname, "..", "frontend", "dist");
 app.use(express.static(frontendPath));
 
 app.get("*", (req, res) => {
+  // If the request is for an admin route but reached here, redirect back to admin logic
+  if (req.originalUrl.startsWith('/admin')) {
+    return res.sendFile(path.join(adminPath, "index.html"));
+  }
   res.sendFile(path.join(frontendPath, "index.html"));
 });
 
