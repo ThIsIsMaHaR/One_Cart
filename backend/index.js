@@ -13,53 +13,43 @@ import { fileURLToPath } from 'url'
 
 dotenv.config()
 
-// Required for ES Modules to handle paths correctly
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const port = process.env.PORT || 10000
 const app = express()
 
-// 1. Middleware
 app.use(express.json())
 app.use(cookieParser())
 
-// Simple CORS for same-domain deployment
 app.use(cors({
   origin: true, 
   credentials: true
 }));
 
-// 2. Health Check Route (Use this to test if server is alive)
-app.get("/health", (req, res) => {
-  res.send("Server is running perfectly!");
-});
-
-// 3. API Routes
+// API Routes
 app.use("/api/auth", authRoutes)
 app.use("/api/user", userRoutes)
 app.use("/api/product", productRoutes)
 app.use("/api/cart", cartRoutes)
 app.use("/api/order", orderRoutes)
 
-// 4. Serve Static Files (Frontend build)
-// This goes up one level from 'backend' then into 'frontend/dist'
+// Serve Static Files
 const frontendPath = path.resolve(__dirname, "..", "frontend", "dist");
+
+// DEBUG LOG: This will show up in your Render logs to help us
+console.log("Looking for frontend at:", frontendPath);
 
 app.use(express.static(frontendPath));
 
-// 5. Catch-all Route
-// Must be last! Serves the React app for any route that isn't an API
 app.get("*", (req, res) => {
   res.sendFile(path.join(frontendPath, "index.html"), (err) => {
     if (err) {
-      console.error("Error sending index.html:", err);
-      res.status(500).send("Frontend build not found at: " + frontendPath);
+      res.status(500).send("Frontend build not found. Path checked: " + frontendPath);
     }
   });
 });
 
-// Start Server
 app.listen(port, () => {
   console.log(`Server running on port ${port}`)
   connectDb()
