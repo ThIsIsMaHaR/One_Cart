@@ -1,7 +1,7 @@
 import express from 'express'
 
 import isAuth from '../middleware/isAuth.js'
-import { addToCart, getUserCart, UpdateCart } from '../controller/cartController.js'
+import { addToCart, getUserCart, UpdateCart } from '../controllers/cartController.js'
 const cartRoutes = express.Router()
 
 cartRoutes.post('/get',isAuth,getUserCart)

@@ -1,5 +1,5 @@
 import express from 'express'
-// Ensure your folder name is 'controllers' (plural)
+// This line looks for the 'controllers' folder and 'productController.js' file
 import { addProduct, listProducts, removeProduct } from '../controllers/productController.js' 
 import upload from '../middleware/multer.js'
 import adminAuth from "../middleware/adminAuth.js"
