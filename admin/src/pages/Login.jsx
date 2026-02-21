@@ -18,7 +18,9 @@ function Login() {
   let navigate = useNavigate()
   const [loading, setLoading] = useState(false)
 
-  // 1. AUTOMATIC REDIRECT: If adminData becomes available, move to dashboard
+  // Define the base backend URL clearly to avoid the /admin prefix bug
+  const backendUrl = "https://onecart-62p0.onrender.com"
+
   useEffect(() => {
     if (adminData) {
       navigate("/")
@@ -29,18 +31,20 @@ function Login() {
     setLoading(true)
     e.preventDefault()
     try {
-      // Use relative path for Render deployment
-      const result = await axios.post('/api/auth/adminlogin', { email, password }, { withCredentials: true })
+      // Use the absolute URL here. This prevents the browser from 
+      // accidentally trying to call https://.../admin/api/auth/adminlogin
+      const result = await axios.post(`${backendUrl}/api/auth/adminlogin`, 
+        { email, password }, 
+        { withCredentials: true }
+      )
       
       if (result.data) {
         console.log("Login Success:", result.data)
         toast.success("Admin Login Successful")
         
-        // 2. REFRESH DATA: Fetch the admin profile into Context
         if (getAdmin) {
           await getAdmin()
         }
-        // Note: The useEffect above will handle the navigate("/") once data is loaded
       }
     } catch (error) {
       console.error("Detailed Login Error:", error.response?.data || error.message)
