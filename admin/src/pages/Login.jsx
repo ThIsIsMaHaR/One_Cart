@@ -1,7 +1,6 @@
 import React, { useContext, useState, useEffect } from 'react'
 import logo from '../assets/logo.png'
-import { IoEyeOutline } from "react-icons/io5";
-import { IoEye } from "react-icons/io5";
+import { IoEyeOutline, IoEye } from "react-icons/io5";
 import axios from 'axios'
 import { authDataContext } from '../context/AuthContext';
 import { adminDataContext } from '../context/AdminContext';
@@ -13,13 +12,12 @@ function Login() {
   let [email, setEmail] = useState("")
   let [password, setPassword] = useState("")
   
-  let { serverUrl } = useContext(authDataContext)
+  // 1. You have this line - keep it here!
+  const backendUrl = "https://onecart-62p0.onrender.com" 
+
   let { adminData, getAdmin } = useContext(adminDataContext)
   let navigate = useNavigate()
   const [loading, setLoading] = useState(false)
-
-  // Define the base backend URL clearly to avoid the /admin prefix bug
-  const backendUrl = "https://onecart-62p0.onrender.com"
 
   useEffect(() => {
     if (adminData) {
@@ -31,8 +29,7 @@ function Login() {
     setLoading(true)
     e.preventDefault()
     try {
-      // Use the absolute URL here. This prevents the browser from 
-      // accidentally trying to call https://.../admin/api/auth/adminlogin
+      // 2. IMPORTANT: We must use `${backendUrl}` inside the axios call
       const result = await axios.post(`${backendUrl}/api/auth/adminlogin`, 
         { email, password }, 
         { withCredentials: true }
@@ -59,7 +56,7 @@ function Login() {
     <div className='w-[100vw] h-[100vh] bg-gradient-to-l from-[#141414] to-[#0c2025] text-[white] flex flex-col items-center justify-start'>
       <div className='w-[100%] h-[80px] flex items-center justify-start px-[30px] gap-[10px] cursor-pointer' >
         <img className='w-[40px]' src={logo} alt="logo" />
-        <h1 className='text-[22px] font-sans '>OneCart</h1>
+        <h1 className='text-[22px] font-sans '>OneCart Admin</h1>
       </div>
 
       <div className='w-[100%] h-[100px] flex items-center justify-center flex-col gap-[10px]'>
