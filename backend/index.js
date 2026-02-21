@@ -1,100 +1,61 @@
-import express from 'express'
-import dotenv from 'dotenv'
-import cors from "cors"
-import cookieParser from 'cookie-parser'
-import path from 'path'
-import { fileURLToPath } from 'url'
+import express from 'express';
+import cors from 'cors';
+import 'dotenv/config';
+import cookieParser from 'cookie-parser';
+import connectDB from './config/db.js'; // Ensure this path matches your file
+import authRouter from './routes/authRoute.js';
+import userRouter from './routes/userRoute.js';
+import productRouter from './routes/productRoute.js';
 
-// 1. Load Env variables FIRST
-dotenv.config()
+const app = express();
+const port = process.env.PORT || 10000;
 
-// 2. Import DB and Routes
-import connectDb from './config/db.js'
-import authRoutes from './routes/authRoutes.js'
-import userRoutes from './routes/userRoutes.js'
-import productRoutes from './routes/productRoutes.js'
-import cartRoutes from './routes/cartRoutes.js'
-import orderRoutes from './routes/orderRoutes.js'
+// 1. Connect to Database
+connectDB();
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-const port = process.env.PORT || 10000
-const app = express()
-
-// 3. Connect to Database 
-connectDb();
-
-// 4. Robust CORS Configuration
+// 2. CORS Configuration (The fix for your ERR_FAILED)
 const allowedOrigins = [
-  'https://e-comm-onecart.onrender.com',
-  'https://onecart-62p0.onrender.com',
-  'http://localhost:5173',
-  'http://localhost:5174'
+  "https://e-comm-onecart.onrender.com", // Your Render Frontend/Admin
+  "http://localhost:5173",               // Local Vite Frontend
+  "http://localhost:5174"                // Local Vite Admin
 ];
 
 app.use(cors({
   origin: function (origin, callback) {
-    // Allow requests with no origin (like Postman or mobile apps)
+    // Allow requests with no origin (like Postman or mobile)
     if (!origin) return callback(null, true);
-    if (allowedOrigins.indexOf(origin) !== -1 || origin.includes('onrender.com')) {
-      return callback(null, true);
-    } else {
-      return callback(new Error('Not allowed by CORS'), false);
+    if (allowedOrigins.indexOf(origin) === -1) {
+      const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
+      return callback(new Error(msg), false);
     }
+    return callback(null, true);
   },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'token', 'Accept']
+  credentials: true, // Crucial for cookies/sessions
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"]
 }));
 
-// 5. MANUAL PREFLIGHT HANDLER (The Fix for "No Access-Control-Allow-Origin")
-// This explicitly answers the browser's "OPTIONS" request with a 200 OK status.
-app.options('*', (req, res) => {
-  const origin = req.header('Origin');
-  if (allowedOrigins.includes(origin) || (origin && origin.includes('onrender.com'))) {
-    res.header('Access-Control-Allow-Origin', origin);
-  }
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, token, Accept');
-  res.header('Access-Control-Allow-Credentials', 'true');
-  return res.sendStatus(200);
+// 3. Essential Middleware
+app.use(express.json());
+app.use(cookieParser());
+
+// 4. Handle Preflight Requests globally
+app.options('*', cors());
+
+// 5. API Routes
+app.use('/api/auth', authRouter);
+app.use('/api/user', userRouter);
+app.use('/api/product', productRouter);
+
+// 6. Health Check & Root Route
+app.get('/', (req, res) => {
+  res.send("🚀 OneCart Backend is Running Perfectly!");
 });
 
-
-
-// 6. Middlewares
-app.use(express.json())
-app.use(express.urlencoded({ extended: true }))
-app.use(cookieParser())
-
-// 7. API Routes
-app.use("/api/auth", authRoutes)
-app.use("/api/user", userRoutes)
-app.use("/api/product", productRoutes)
-app.use("/api/cart", cartRoutes)
-app.use("/api/order", orderRoutes)
-
-// 8. Static File Handling
-const adminPath = path.resolve(__dirname, "../admin/dist");
-const frontendPath = path.resolve(__dirname, "../frontend/dist");
-
-app.use("/admin", express.static(adminPath));
-app.use(express.static(frontendPath));
-
-// 9. SPA Routing (The 404 Refresh Fix)
-app.get("*", (req, res) => {
-  if (req.originalUrl.startsWith('/admin')) {
-    res.sendFile(path.join(adminPath, "index.html"), (err) => {
-      if (err) res.status(404).send("Admin build not found.");
-    });
-  } else {
-    res.sendFile(path.join(frontendPath, "index.html"), (err) => {
-      if (err) res.status(404).send("Frontend build not found.");
-    });
-  }
-});
-
+// 7. Start Server
 app.listen(port, () => {
-  console.log(`🚀 Server running on port ${port}`)
-})
+  console.log(`🚀 Server running on port ${port}`);
+  if (!process.env.MONGODB_URI) {
+    console.error("❌ ERROR: MONGODB_URI is missing in Environment Variables!");
+  }
+});
