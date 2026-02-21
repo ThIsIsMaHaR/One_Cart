@@ -5,7 +5,7 @@ import cookieParser from 'cookie-parser'
 import authRoutes from './routes/authRoutes.js'
 import cors from "cors"
 import userRoutes from './routes/userRoutes.js'
-import productRoutes from './routes/productRoute.js' // Ensure this matches your filename exactly
+import productRoutes from './routes/productRoute.js' // Ensure the file in your routes folder is exactly 'productRoute.js'
 import cartRoutes from './routes/cartRoutes.js'
 import orderRoutes from './routes/orderRoutes.js'
 import path from 'path'
@@ -25,8 +25,7 @@ app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 app.use(cookieParser())
 
-// --- 2. CORS SETUP ---
-// Using an array for multiple origins. Avoid trailing slashes.
+// --- 2. ROBUST CORS SETUP ---
 const allowedOrigins = [
   'https://e-comm-onecart.onrender.com',
   'https://onecart-62p0.onrender.com'
@@ -34,7 +33,6 @@ const allowedOrigins = [
 
 app.use(cors({
   origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl)
     if (!origin) return callback(null, true);
     if (allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
@@ -47,7 +45,6 @@ app.use(cors({
   allowedHeaders: ["Content-Type", "Authorization"]
 }));
 
-// Handle Pre-flight options
 app.options('*', cors());
 
 // --- 3. API ROUTES ---
@@ -58,14 +55,12 @@ app.use("/api/cart", cartRoutes)
 app.use("/api/order", orderRoutes)
 
 // --- 4. STATIC FILES (DEPLOYMENT) ---
-// Note: path.resolve correctly targets the dist folders from the backend folder
 const adminPath = path.resolve(__dirname, "..", "admin", "dist");
 app.use("/admin", express.static(adminPath));
 
 const frontendPath = path.resolve(__dirname, "..", "frontend", "dist");
 app.use(express.static(frontendPath));
 
-// Catch-all route to serve the Single Page Application (SPA)
 app.get("*", (req, res) => {
   if (req.originalUrl.startsWith('/admin')) {
     return res.sendFile(path.join(adminPath, "index.html"));

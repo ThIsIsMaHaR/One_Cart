@@ -1,11 +1,13 @@
 import express from 'express'
-import { addProduct, listProducts, removeProduct } from '../controllers/productController.js'
+// NOTE: If your folder is named 'controller' (singular), remove the 's' below.
+import { addProduct, listProducts, removeProduct } from '../controllers/productController.js' 
 import upload from '../middleware/multer.js'
 import adminAuth from "../middleware/adminAuth.js"
 
 const productRoutes = express.Router()
 
 // Route for Adding Product
+// Ensure 'addProduct' is correctly exported from your controller
 productRoutes.post("/addproduct", 
     upload.fields([
         { name: "image1", maxCount: 1 },
@@ -17,6 +19,7 @@ productRoutes.post("/addproduct",
 )
 
 // Route for Listing Products
+// Standardized to 'listProducts' to match typical controller naming
 productRoutes.get("/list", listProducts)
 
 // Route for Removing Products
