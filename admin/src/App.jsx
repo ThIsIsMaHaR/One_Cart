@@ -39,21 +39,18 @@ function App() {
   return (
     <>
       <ToastContainer />
-      
       <Routes>
         {/* If not logged in, any path shows Login */}
         {!adminData ? (
           <Route path="*" element={<Login />} />
         ) : (
           <>
-            {/* When logged in, handle paths relative to /admin */}
+            {/* Note: with basename="/admin", path="/" actually means "/admin/" */}
             <Route path='/' element={<Home />} />
             <Route path='/add' element={<Add />} />
             <Route path='/lists' element={<Lists />} />
             <Route path='/orders' element={<Orders />} />
-            {/* If they try to go to login while logged in, send home */}
             <Route path='/login' element={<Navigate to="/" />} />
-            {/* Catch-all for logged in users to prevent white screen */}
             <Route path="*" element={<Navigate to="/" />} />
           </>
         )}
