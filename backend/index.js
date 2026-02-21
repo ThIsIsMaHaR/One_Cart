@@ -5,7 +5,7 @@ import cookieParser from 'cookie-parser'
 import path from 'path'
 import { fileURLToPath } from 'url'
 
-// 1. Load Env variables FIRST
+// 1. Load Env variables FIRST before anything else
 dotenv.config()
 
 // 2. Import DB and Routes
@@ -22,40 +22,28 @@ const __dirname = path.dirname(__filename);
 const port = process.env.PORT || 10000
 const app = express()
 
-// 3. Connect to Database (This will now have access to MONGODB_URI)
+// 3. Connect to Database 
 connectDb();
 
-// 4. Middlewares
-app.use(express.json())
-app.use(express.urlencoded({ extended: true }))
-app.use(cookieParser())
-
-// 5. Robust CORS Configuration
-// This allows both your frontend, your admin, and local testing
-const allowedOrigins = [
-  'https://e-comm-onecart.onrender.com',
-  'https://onecart-62p0.onrender.com',
-  'http://localhost:5173',
-  'http://localhost:5174'
-];
-
+// 4. CRITICAL: Nuclear CORS Configuration
+// This must be placed BEFORE your routes to handle preflight (OPTIONS) requests
 app.use(cors({
   origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or Postman)
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.indexOf(origin) !== -1 || origin.includes('onrender.com')) {
-      return callback(null, true);
-    } else {
-      return callback(new Error('Not allowed by CORS'), false);
-    }
+    // Allows all origins (localhost and Render) to fix the "Blocked by CORS" error
+    return callback(null, true);
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'token']
+  allowedHeaders: ['Content-Type', 'Authorization', 'token', 'Accept']
 }));
 
 // Handle Preflight for all routes
 app.options('*', cors());
+
+// 5. General Middlewares
+app.use(express.json())
+app.use(express.urlencoded({ extended: true }))
+app.use(cookieParser())
 
 // 6. API Routes
 app.use("/api/auth", authRoutes)
@@ -64,7 +52,7 @@ app.use("/api/product", productRoutes)
 app.use("/api/cart", cartRoutes)
 app.use("/api/order", orderRoutes)
 
-// 7. Resolve paths for Static Assets
+// 7. Resolve paths for Static Assets (Frontend and Admin)
 const adminPath = path.resolve(__dirname, "../admin/dist");
 const frontendPath = path.resolve(__dirname, "../frontend/dist");
 
@@ -74,16 +62,17 @@ app.use("/admin", express.static(adminPath));
 // Serve Frontend static files
 app.use(express.static(frontendPath));
 
-// 8. Handle SPA Routing (The 404 Fix)
+// 8. Handle SPA Routing (The 404 Fix for Refreshes)
 app.get("*", (req, res) => {
+  // If request starts with /admin, serve admin/index.html
   if (req.originalUrl.startsWith('/admin')) {
     res.sendFile(path.join(adminPath, "index.html"), (err) => {
       if (err) {
-        console.log("Admin build not found at:", adminPath);
-        res.status(404).send("Admin build not found. Run 'npm run build' in admin folder.");
+        res.status(404).send("Admin build not found. Ensure you ran 'npm run build' in the admin folder.");
       }
     });
   } else {
+    // Everything else serves the main frontend
     res.sendFile(path.join(frontendPath, "index.html"), (err) => {
       if (err) {
         res.status(404).send("Frontend build not found.");
