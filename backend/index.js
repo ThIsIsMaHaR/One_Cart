@@ -1,78 +1,80 @@
-import { v2 as cloudinary } from 'cloudinary';
-import productModel from '../models/productModel.js';
-import fs from 'fs';
+import express from 'express'
+import dotenv from 'dotenv'
+import connectDb from './config/db.js'
+import cookieParser from 'cookie-parser'
+import authRoutes from './routes/authRoutes.js'
+import cors from "cors"
+import userRoutes from './routes/userRoutes.js'
+import productRoutes from './routes/productRoute.js' // Ensure this matches your filename exactly
+import cartRoutes from './routes/cartRoutes.js'
+import orderRoutes from './routes/orderRoutes.js'
+import path from 'path'
+import { fileURLToPath } from 'url'
 
-// --- CLOUDINARY CONFIG ---
-// This must be here to ensure the library is ready!
-cloudinary.config({
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-    api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET
+// --- CONFIGURATION ---
+dotenv.config()
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const port = process.env.PORT || 10000
+const app = express()
+
+// --- 1. MIDDLEWARE SETUP ---
+app.use(express.json())
+app.use(express.urlencoded({ extended: true }))
+app.use(cookieParser())
+
+// --- 2. CORS SETUP ---
+// Using an array for multiple origins. Avoid trailing slashes.
+const allowedOrigins = [
+  'https://e-comm-onecart.onrender.com',
+  'https://onecart-62p0.onrender.com'
+];
+
+app.use(cors({
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"]
+}));
+
+// Handle Pre-flight options
+app.options('*', cors());
+
+// --- 3. API ROUTES ---
+app.use("/api/auth", authRoutes)
+app.use("/api/user", userRoutes)
+app.use("/api/product", productRoutes)
+app.use("/api/cart", cartRoutes)
+app.use("/api/order", orderRoutes)
+
+// --- 4. STATIC FILES (DEPLOYMENT) ---
+// Note: path.resolve correctly targets the dist folders from the backend folder
+const adminPath = path.resolve(__dirname, "..", "admin", "dist");
+app.use("/admin", express.static(adminPath));
+
+const frontendPath = path.resolve(__dirname, "..", "frontend", "dist");
+app.use(express.static(frontendPath));
+
+// Catch-all route to serve the Single Page Application (SPA)
+app.get("*", (req, res) => {
+  if (req.originalUrl.startsWith('/admin')) {
+    return res.sendFile(path.join(adminPath, "index.html"));
+  }
+  res.sendFile(path.join(frontendPath, "index.html"));
 });
 
-const addProduct = async (req, res) => {
-    try {
-        const { name, description, price, category, subCategory, sizes, bestseller } = req.body;
-
-        // Collect files from multer
-        const image1 = req.files.image1 && req.files.image1[0];
-        const image2 = req.files.image2 && req.files.image2[0];
-        const image3 = req.files.image3 && req.files.image3[0];
-        const image4 = req.files.image4 && req.files.image4[0];
-
-        const images = [image1, image2, image3, image4].filter((item) => item !== undefined);
-
-        // Upload images to Cloudinary
-        let imagesUrl = await Promise.all(
-            images.map(async (item) => {
-                let result = await cloudinary.uploader.upload(item.path, { resource_type: 'image' });
-                // Clean up local file after upload
-                if (fs.existsSync(item.path)) fs.unlinkSync(item.path);
-                return result.secure_url;
-            })
-        );
-
-        const productData = {
-            name,
-            description,
-            category,
-            price: Number(price),
-            subCategory,
-            bestseller: bestseller === "true" ? true : false,
-            sizes: JSON.parse(sizes),
-            image: imagesUrl,
-            date: Date.now()
-        };
-
-        const product = new productModel(productData);
-        await product.save();
-
-        res.json({ success: true, message: "Product Added" });
-
-    } catch (error) {
-        console.log("Add Product Error:", error);
-        res.status(500).json({ success: false, message: error.message });
-    }
-};
-
-const listProducts = async (req, res) => {
-    try {
-        const products = await productModel.find({});
-        res.json({ success: true, products });
-    } catch (error) {
-        console.log(error);
-        res.status(500).json({ success: false, message: error.message });
-    }
-};
-
-const removeProduct = async (req, res) => {
-    try {
-        await productModel.findByIdAndDelete(req.body.id);
-        res.json({ success: true, message: "Product Removed" });
-    } catch (error) {
-        console.log(error);
-        res.status(500).json({ success: false, message: error.message });
-    }
-};
-
-export { addProduct, listProducts, removeProduct };
+// --- 5. SERVER START ---
+app.listen(port, () => {
+  console.log(`Server running on port ${port}`)
+  connectDb()
+})

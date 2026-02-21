@@ -1,12 +1,11 @@
 import express from 'express'
-import { addProduct, listProduct, removeProduct } from '../controller/productController.js'
+import { addProduct, listProducts, removeProduct } from '../controllers/productController.js'
 import upload from '../middleware/multer.js'
 import adminAuth from "../middleware/adminAuth.js"
 
 const productRoutes = express.Router()
 
 // Route for Adding Product
-// upload.fields matches the image1, image2, etc. keys from your Add.jsx
 productRoutes.post("/addproduct", 
     upload.fields([
         { name: "image1", maxCount: 1 },
@@ -18,10 +17,9 @@ productRoutes.post("/addproduct",
 )
 
 // Route for Listing Products
-productRoutes.get("/list", listProduct)
+productRoutes.get("/list", listProducts)
 
 // Route for Removing Products
-// Added adminAuth here - ensure your frontend is sending the token in headers
 productRoutes.post("/remove", adminAuth, removeProduct)
 
 export default productRoutes
