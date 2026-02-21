@@ -1,56 +1,45 @@
 import mongoose from "mongoose";
 
 const productSchema = new mongoose.Schema({
-    name:{
-        type:String,
-        required:true
+    name: {
+        type: String,
+        required: true
     },
-    image1:{
-        type:String,
-        required:true
+    description: {
+        type: String,
+        required: true
     },
-    image2:{
-        type:String,
-        required:true
+    price: {
+        type: Number,
+        required: true
     },
-    image3:{
-        type:String,
-        required:true
+    // We use an Array here to match the logic in your productController.js
+    image: {
+        type: Array, 
+        required: true
     },
-    image4:{
-        type:String,
-        required:true
+    category: {
+        type: String,
+        required: true
     },
-    description:{
-        type:String,
-        required:true
+    subCategory: {
+        type: String,
+        required: true
     },
-    price:{
-        type:Number,
-        required:true
+    sizes: {
+        type: Array,
+        required: true
     },
-    category:{
-        type:String,
-        required:true
+    bestseller: {
+        type: Boolean
     },
-    subCategory:{
-        type:String,
-        required:true
-    },
-    sizes:{
-        type:Array,
-        required:true
-    },
-    date:{
-        type:Number,
-        required:true
-    },
-    bestseller:{
-        type:Boolean
+    date: {
+        type: Number,
+        required: true
     }
+}, { timestamps: true });
 
-},{timestamps:true})
+// CRITICAL: We name the constant 'productModel' to match your controller's import
+const productModel = mongoose.models.product || mongoose.model("product", productSchema);
 
-const Product = mongoose.model("Product" , productSchema)
-
-export default Product
+export default productModel;
