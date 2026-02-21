@@ -3,80 +3,102 @@ import Nav from '../component/Nav'
 import Sidebar from '../component/Sidebar'
 import { authDataContext } from '../context/AuthContext'
 import axios from 'axios'
+import { toast } from 'react-toastify'
 
 function Lists() {
-  let [list ,setList] = useState([])
-  let {serverUrl} = useContext(authDataContext)
-
+  const [list, setList] = useState([])
+  const { serverUrl } = useContext(authDataContext)
 
   const fetchList = async () => {
     try {
-      let result = await axios.get(serverUrl + "/api/product/list" )
-      setList(result.data)
-      console.log(result.data)
+      const response = await axios.get(`${serverUrl}/api/product/list`)
+      
+      // Checking for success flag we added in productController.js
+      if (response.data.success) {
+        setList(response.data.products)
+      } else {
+        // Fallback in case backend sends raw array
+        setList(Array.isArray(response.data) ? response.data : [])
+      }
     } catch (error) {
-      console.log(error)
+      console.error("Fetch error:", error)
+      toast.error("Could not load products")
     }
-    
   }
 
   const removeList = async (id) => {
-
     try {
-      let result = await axios.post(`${serverUrl}/api/product/remove/${id}`,{},{withCredentials:true})
+      // Updated to use the new route logic
+      const response = await axios.post(`${serverUrl}/api/product/remove`, { id }, { withCredentials: true })
 
-      if(result.data){
+      if (response.data.success) {
+        toast.success("Product removed")
         fetchList()
-      }
-      else{
-        console.log("Failed to remove Product")
+      } else {
+        toast.error("Failed to remove product")
       }
     } catch (error) {
-      console.log(error)
+      console.error("Remove error:", error)
+      toast.error("Error removing product")
     }
-    
   }
 
-  useEffect(()=>{
-   fetchList()
-  },[])
+  useEffect(() => {
+    fetchList()
+  }, [])
+
   return (
     <div className='w-[100vw] min-h-[100vh] bg-gradient-to-l from-[#141414] to-[#0c2025] text-[white]'>
-      <Nav/>
+      <Nav />
       <div className='w-[100%] h-[100%] flex items-center justify-start'>
-        <Sidebar/>
+        <Sidebar />
 
         <div className='w-[82%] h-[100%] lg:ml-[320px] md:ml-[230px] mt-[70px] flex flex-col gap-[30px] overflow-x-hidden py-[50px] ml-[100px]'>
-          <div className='w-[400px] h-[50px] text-[28px] md:text-[40px] mb-[20px] text-white'>All Listed Products</div>
+          <div className='w-[400px] h-[50px] text-[28px] md:text-[40px] mb-[20px] text-white'>
+            All Listed Products
+          </div>
 
-
-          {
-            list?.length > 0 ? (
-              list.map((item,index)=>(
-                <div className='w-[90%] md:h-[120px] h-[90px] bg-slate-600 rounded-xl flex items-center justify-start gap-[5px] md:gap-[30px] p-[10px] md:px-[30px]' key={index}>
-                  <img src={item.image1} className='w-[30%] md:w-[120px] h-[90%] rounded-lg' alt="" />
-                  <div className='w-[90%] h-[80%] flex flex-col items-start justify-center gap-[2px]'>
-
-                    <div className='w-[100%] md:text-[20px] text-[15px] text-[#bef0f3]'>{item.name}</div>
-                     <div className='md:text-[17px] text-[15px] text-[#bef3da]'>{item.category}</div>
-                  <div className='md:text-[17px] text-[15px] text-[#bef3da]'>₹{item.price}</div>
-
+          {list && list.length > 0 ? (
+            list.map((item, index) => (
+              <div 
+                className='w-[90%] md:h-[120px] h-[90px] bg-slate-600 rounded-xl flex items-center justify-start gap-[5px] md:gap-[30px] p-[10px] md:px-[30px]' 
+                key={item._id || index}
+              >
+                {/* Updated: Since we changed the controller to save an array of URLs, 
+                  we access the first one using item.image[0]
+                */}
+                <img 
+                  src={item.image && item.image[0] ? item.image[0] : ""} 
+                  className='w-[30%] md:w-[120px] h-[90%] rounded-lg object-cover' 
+                  alt={item.name} 
+                />
+                
+                <div className='w-[90%] h-[80%] flex flex-col items-start justify-center gap-[2px]'>
+                  <div className='w-[100%] md:text-[20px] text-[15px] text-[#bef0f3] truncate'>
+                    {item.name}
                   </div>
-                  <div className='w-[10%] h-[100%] bg-transparent flex items-center justify-center'>
-                    <span className='w-[35px] h-[30%] flex items-center justify-center rounded-md md:hover:bg-red-300 md:hover:text-black cursor-pointer' onClick={()=>removeList(item._id)}>X</span>
+                  <div className='md:text-[17px] text-[15px] text-[#bef3da]'>
+                    {item.category}
                   </div>
-                 
-
+                  <div className='md:text-[17px] text-[15px] text-[#bef3da]'>
+                    ₹{item.price}
+                  </div>
                 </div>
-              ))
-            )
 
-            : (
-              <div className='text-white text-lg'>No products available.</div>
-            )
-          }
+                <div className='w-[10%] h-[100%] bg-transparent flex items-center justify-center'>
+                  <span 
+                    className='w-[35px] h-[35px] flex items-center justify-center rounded-md hover:bg-red-500 hover:text-white transition-all cursor-pointer' 
+                    onClick={() => removeList(item._id)}
+                  >
+                    X
+                  </span>
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className='text-white text-lg'>No products available.</div>
+          )}
         </div>
-
       </div>
     </div>
   )
