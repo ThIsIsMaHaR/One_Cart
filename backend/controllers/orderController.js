@@ -1,5 +1,5 @@
-import Order from "../model/orderModel.js";
-import User from "../model/userModel.js";
+import Order from "../models/orderModel.js";
+import User from "../models/userModel.js";
 import razorpay from 'razorpay'
 import dotenv from 'dotenv'
 dotenv.config()
