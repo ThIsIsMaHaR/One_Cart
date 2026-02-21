@@ -6,6 +6,7 @@ import axios from 'axios'
 import { toast } from 'react-toastify'
 
 function Lists() {
+  // Initialize as empty array to prevent .map or .slice crashes
   const [list, setList] = useState([])
   const { serverUrl } = useContext(authDataContext)
 
@@ -13,29 +14,33 @@ function Lists() {
     try {
       const response = await axios.get(`${serverUrl}/api/product/list`)
       
-      // Checking for success flag we added in productController.js
-      if (response.data.success) {
+      // Safety check: ensure we are setting an array
+      if (response.data && response.data.success && Array.isArray(response.data.products)) {
         setList(response.data.products)
+      } else if (Array.isArray(response.data)) {
+        // Fallback for old backend format
+        setList(response.data)
       } else {
-        // Fallback in case backend sends raw array
-        setList(Array.isArray(response.data) ? response.data : [])
+        console.error("Data format incorrect:", response.data)
+        setList([]) 
       }
     } catch (error) {
       console.error("Fetch error:", error)
       toast.error("Could not load products")
+      setList([]) // Ensure state remains an array on error
     }
   }
 
   const removeList = async (id) => {
     try {
-      // Updated to use the new route logic
+      // Sending id in the body to match modern API standards
       const response = await axios.post(`${serverUrl}/api/product/remove`, { id }, { withCredentials: true })
 
       if (response.data.success) {
         toast.success("Product removed")
         fetchList()
       } else {
-        toast.error("Failed to remove product")
+        toast.error(response.data.message || "Failed to remove product")
       }
     } catch (error) {
       console.error("Remove error:", error)
@@ -58,15 +63,13 @@ function Lists() {
             All Listed Products
           </div>
 
-          {list && list.length > 0 ? (
+          {/* Using optional chaining ?. to prevent crashes */}
+          {list?.length > 0 ? (
             list.map((item, index) => (
               <div 
                 className='w-[90%] md:h-[120px] h-[90px] bg-slate-600 rounded-xl flex items-center justify-start gap-[5px] md:gap-[30px] p-[10px] md:px-[30px]' 
                 key={item._id || index}
               >
-                {/* Updated: Since we changed the controller to save an array of URLs, 
-                  we access the first one using item.image[0]
-                */}
                 <img 
                   src={item.image && item.image[0] ? item.image[0] : ""} 
                   className='w-[30%] md:w-[120px] h-[90%] rounded-lg object-cover' 
