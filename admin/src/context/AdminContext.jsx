@@ -7,32 +7,52 @@ export const adminDataContext = createContext();
 const AdminContextProvider = (props) => {
     const [adminData, setAdminData] = useState(null);
     
-    // 🔥 CRITICAL: Using the absolute URL prevents the "/admin/api/..." 404 error
+    // Absolute URL for the Backend
     const backendUrl = "https://onecart-62p0.onrender.com";
 
-    // Function to fetch Admin Profile/Data
+    // 1. Admin Login Function (Add this here!)
+    const loginAdmin = async (email, password) => {
+        try {
+            const { data } = await axios.post(`${backendUrl}/api/auth/adminlogin`, 
+                { email, password }, 
+                { withCredentials: true }
+            );
+
+            if (data.success) {
+                setAdminData(data.adminData); // Match the 'adminData' key from our new controller
+                toast.success("Welcome, Admin!");
+                return true;
+            }
+        } catch (error) {
+            const errorMsg = error.response?.data?.message || "Login Failed";
+            toast.error(errorMsg);
+            return false;
+        }
+    };
+
+    // 2. Function to fetch Admin Profile
     const getAdmin = async () => {
         try {
-            const { data } = await axios.get(`${backendUrl}/api/user/getadmin`, { 
+            // Check if your route is /api/auth or /api/user
+            const { data } = await axios.get(`${backendUrl}/api/auth/getadmin`, { 
                 withCredentials: true 
             });
 
             if (data.success) {
-                setAdminData(data.admin);
+                setAdminData(data.admin || data.adminData);
             } else {
                 setAdminData(null);
             }
         } catch (error) {
-            // If it's a 401/404, just reset adminData without spamming logs
-            console.log("Admin Fetch Error (Not logged in):", error.response?.status || error.message);
+            console.log("Admin session not found");
             setAdminData(null);
         }
     };
 
-    // Logout Function
+    // 3. Logout Function
     const logoutAdmin = async () => {
         try {
-            const { data } = await axios.post(`${backendUrl}/api/auth/logout`, {}, { 
+            const { data } = await axios.post(`${backendUrl}/api/auth/logOut`, {}, { 
                 withCredentials: true 
             });
             if (data.success) {
@@ -44,7 +64,6 @@ const AdminContextProvider = (props) => {
         }
     };
 
-    // Auto-fetch admin data on refresh
     useEffect(() => {
         getAdmin();
     }, []);
@@ -52,9 +71,10 @@ const AdminContextProvider = (props) => {
     const value = {
         adminData,
         setAdminData,
+        loginAdmin, // Now you can call this from your Login.jsx
         getAdmin,
         logoutAdmin,
-        backendUrl // We pass this down so other pages (Add, List) can use it
+        backendUrl 
     };
 
     return (
