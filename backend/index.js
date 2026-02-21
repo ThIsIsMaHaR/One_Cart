@@ -22,13 +22,24 @@ const __dirname = path.dirname(__filename);
 connectDB();
 
 const allowedOrigins = [
-  "https://e-comm-onecart.onrender.com", 
-  "http://localhost:5173",               
-  "http://localhost:5174"                
+  "https://e-comm-onecart.onrender.com", // Your live Render URL
+  "http://localhost:5173",               // Your local Frontend
+  "http://localhost:5174",               // Your local Admin (The one causing the error!)
+  "http://localhost:5175"                // Just in case
 ];
 
 app.use(cors({
-  origin: true, // Easier for debugging production
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like Postman)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      console.log("CORS Blocked for Origin:", origin); // This will show in Render logs
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"]
