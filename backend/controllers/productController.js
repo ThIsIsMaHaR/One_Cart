@@ -52,7 +52,7 @@ const addProduct = async (req, res) => {
     }
 };
 
-// 2. List Products (Standardized name to plural)
+// 2. List Products (Plural 's' added here)
 const listProducts = async (req, res) => {
     try {
         const products = await productModel.find({});
@@ -74,5 +74,5 @@ const removeProduct = async (req, res) => {
     }
 };
 
-// CRITICAL: The names here must match the imports in productRoutes.js
+// THIS MUST MATCH THE IMPORT IN productRoutes.js
 export { addProduct, listProducts, removeProduct };
