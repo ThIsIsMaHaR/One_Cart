@@ -5,7 +5,7 @@ import cookieParser from 'cookie-parser'
 import authRoutes from './routes/authRoutes.js'
 import cors from "cors"
 import userRoutes from './routes/userRoutes.js'
-import productRoutes from './routes/productRoutes.js' // Updated to 'productRoutes.js'
+import productRoutes from './routes/productRoutes.js'
 import cartRoutes from './routes/cartRoutes.js'
 import orderRoutes from './routes/orderRoutes.js'
 import path from 'path'
@@ -23,23 +23,10 @@ app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 app.use(cookieParser())
 
-// Robust CORS
-const allowedOrigins = [
-  'https://e-comm-onecart.onrender.com',
-  'https://onecart-62p0.onrender.com'
-];
-
+// CORS Configuration
 app.use(cors({
-  origin: function (origin, callback) {
-    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"]
+  origin: ['https://e-comm-onecart.onrender.com', 'https://onecart-62p0.onrender.com'],
+  credentials: true
 }));
 
 app.options('*', cors());
@@ -51,7 +38,7 @@ app.use("/api/product", productRoutes)
 app.use("/api/cart", cartRoutes)
 app.use("/api/order", orderRoutes)
 
-// Deployment
+// Serve Static Assets (Frontend and Admin)
 const adminPath = path.resolve(__dirname, "..", "admin", "dist");
 app.use("/admin", express.static(adminPath));
 
