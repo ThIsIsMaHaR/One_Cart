@@ -21,22 +21,34 @@ const app = express()
 
 // --- 1. MIDDLEWARE SETUP ---
 app.use(express.json())
-app.use(express.urlencoded({ extended: true })) // Added this to help with form parsing
+app.use(express.urlencoded({ extended: true }))
 app.use(cookieParser())
 
-// --- 2. ENHANCED CORS SETUP ---
-// Move this ABOVE your routes
+// --- 2. ROBUST CORS SETUP ---
+// This configuration handles multiple origins and trailing slashes automatically
+const allowedOrigins = [
+  'https://e-comm-onecart.onrender.com',
+  'https://e-comm-onecart.onrender.com/',
+  'https://onecart-62p0.onrender.com',
+  'https://onecart-62p0.onrender.com/'
+];
+
 app.use(cors({
-  origin: [
-    'https://e-comm-onecart.onrender.com', // Your frontend
-    'https://onecart-62p0.onrender.com'    // Your admin/backend
-  ],
+  origin: function (origin, callback) {
+    // allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"]
 }));
 
-// Handle Pre-flight requests (Fixes many browser-side CORS blocks)
+// Handle Pre-flight options for all routes
 app.options('*', cors());
 
 // --- 3. API ROUTES ---
@@ -46,25 +58,27 @@ app.use("/api/product", productRoutes)
 app.use("/api/cart", cartRoutes)
 app.use("/api/order", orderRoutes)
 
-// --- 4. ADMIN PANEL DEPLOYMENT ---
+// --- 4. STATIC FILES & DEPLOYMENT ---
+
+// Admin Panel
 const adminPath = path.resolve(__dirname, "..", "admin", "dist");
 app.use("/admin", express.static(adminPath));
 
-app.get("/admin/*", (req, res) => {
-  res.sendFile(path.join(adminPath, "index.html"));
-});
-
-// --- 5. USER FRONTEND DEPLOYMENT ---
+// Frontend User Side
 const frontendPath = path.resolve(__dirname, "..", "frontend", "dist");
 app.use(express.static(frontendPath));
 
+// Fallback for SPA Routing
 app.get("*", (req, res) => {
+  // If the request starts with /admin, serve admin index
   if (req.originalUrl.startsWith('/admin')) {
     return res.sendFile(path.join(adminPath, "index.html"));
   }
+  // Otherwise serve frontend index
   res.sendFile(path.join(frontendPath, "index.html"));
 });
 
+// --- 5. SERVER START ---
 app.listen(port, () => {
   console.log(`Server running on port ${port}`)
   connectDb()
