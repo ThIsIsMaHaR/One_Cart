@@ -24,7 +24,6 @@ const __dirname = path.dirname(__filename);
 connectDB();
 
 // 2. THE NUCLEAR CORS FIX
-// This allows your local dev server (5174) and your Render URL to talk to this backend.
 const allowedOrigins = [
   "https://e-comm-onecart.onrender.com",
   "http://localhost:5173",
@@ -34,14 +33,12 @@ const allowedOrigins = [
 
 app.use(cors({
   origin: function (origin, callback) {
-    // Allow requests with no origin (like Postman or mobile)
     if (!origin) return callback(null, true);
     if (allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
-      // For debugging: this will show up in Render logs if a new URL is blocked
       console.log("CORS blocked for origin:", origin);
-      callback(null, true); // Temporarily allow all during debugging if you prefer
+      callback(null, true); 
     }
   },
   credentials: true,
@@ -49,7 +46,7 @@ app.use(cors({
   allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept"]
 }));
 
-// 3. MANUAL PREFLIGHT HANDLER (Ensures 'Access-Control-Allow-Origin' is ALWAYS present)
+// 3. MANUAL PREFLIGHT HANDLER
 app.use((req, res, next) => {
   const origin = req.headers.origin;
   if (allowedOrigins.includes(origin)) {
@@ -66,7 +63,12 @@ app.use((req, res, next) => {
 });
 
 // 4. Middlewares
+// express.json() handles JSON data
 app.use(express.json());
+
+// IMPORTANT FIX: express.urlencoded handles the text fields within FormData
+app.use(express.urlencoded({ extended: true }));
+
 app.use(cookieParser());
 
 // 5. API Routes
