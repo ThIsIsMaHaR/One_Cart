@@ -4,11 +4,12 @@ import bcrypt from "bcryptjs";
 import { genToken, genToken1 } from "../config/token.js";
 import jwt from 'jsonwebtoken';
 
+// Standardized cookie settings for Render Production
 const cookieOptions = {
     httpOnly: true,
-    secure: true,      
-    sameSite: "none",  
-    maxAge: 7 * 24 * 60 * 60 * 1000 
+    secure: true,      // Required for HTTPS on Render
+    sameSite: "none",  // Required for cross-site cookies
+    maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
 };
 
 // --- USER REGISTRATION ---
@@ -58,18 +59,29 @@ export const login = async (req, res) => {
     }
 };
 
-// --- LOGOUT ---
+// --- LOGOUT (Explicitly clearing both cookies) ---
 export const logOut = async (req, res) => {
     try {
-        res.clearCookie("token", { ...cookieOptions, maxAge: 0 });
-        res.clearCookie("adminToken", { ...cookieOptions, maxAge: 0 });
-        return res.status(200).json({ success: true, message: "Logged out successfully" });
+        // We must pass the same secure/sameSite options used to create them
+        const clearOptions = {
+            httpOnly: true,
+            secure: true,
+            sameSite: "none",
+        };
+
+        res.clearCookie("token", clearOptions);
+        res.clearCookie("adminToken", clearOptions);
+
+        return res.status(200).json({ 
+            success: true, 
+            message: "Logged out successfully" 
+        });
     } catch (error) {
         return res.status(500).json({ success: false, message: "Logout error" });
     }
 };
 
-// --- GOOGLE LOGIN (The missing function) ---
+// --- GOOGLE LOGIN ---
 export const googleLogin = async (req, res) => {
     try {
         const { name, email } = req.body;
@@ -95,7 +107,7 @@ export const adminLogin = async (req, res) => {
 
             res.cookie("adminToken", token, {
                 ...cookieOptions,
-                maxAge: 1 * 24 * 60 * 60 * 1000 
+                maxAge: 1 * 24 * 60 * 60 * 1000 // 1 day
             });
 
             return res.status(200).json({ 
