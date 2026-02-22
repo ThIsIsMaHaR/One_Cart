@@ -4,11 +4,11 @@ import bcrypt from "bcryptjs";
 import { genToken, genToken1 } from "../config/token.js";
 import jwt from 'jsonwebtoken';
 
-// Helper for environment-aware cookie settings
+// Standardized cookie settings for Render Production
 const cookieOptions = {
     httpOnly: true,
-    secure: true,      // Must be true on Render (HTTPS)
-    sameSite: "none",  // Must be "none" for cross-site cookies on Render
+    secure: true,      // Required for HTTPS on Render
+    sameSite: "none",  // Required for cross-site cookies
     maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
 };
 
@@ -18,48 +18,36 @@ export const registration = async (req, res) => {
         const { name, email, password } = req.body;
         const existUser = await User.findOne({ email });
         
-        if (existUser) {
-            return res.status(400).json({ success: false, message: "User already exists" });
-        }
-        if (!validator.isEmail(email)) {
-            return res.status(400).json({ success: false, message: "Enter a valid Email" });
-        }
-        if (password.length < 8) {
-            return res.status(400).json({ success: false, message: "Enter a stronger password (min 8 chars)" });
-        }
+        if (existUser) return res.status(400).json({ success: false, message: "User already exists" });
+        if (!validator.isEmail(email)) return res.status(400).json({ success: false, message: "Enter a valid Email" });
+        if (password.length < 8) return res.status(400).json({ success: false, message: "Enter a stronger password" });
 
         const hashPassword = await bcrypt.hash(password, 10);
         const user = await User.create({ name, email, password: hashPassword });
-        const token = await genToken(user._id);
+        const token = genToken(user._id);
 
         res.cookie("token", token, cookieOptions);
-        
         return res.status(201).json({ 
             success: true, 
             user: { _id: user._id, name: user.name, email: user.email } 
         });
     } catch (error) {
-        console.error("Registration Error:", error);
-        return res.status(500).json({ success: false, message: `Registration error: ${error.message}` });
+        return res.status(500).json({ success: false, message: error.message });
     }
 };
 
 // --- USER LOGIN ---
 export const login = async (req, res) => {
     try {
-        let { email, password } = req.body;
-        let user = await User.findOne({ email });
+        const { email, password } = req.body;
+        const user = await User.findOne({ email });
 
-        if (!user) {
-            return res.status(404).json({ success: false, message: "User not found" });
-        }
+        if (!user) return res.status(404).json({ success: false, message: "User not found" });
 
-        let isMatch = await bcrypt.compare(password, user.password);
-        if (!isMatch) {
-            return res.status(400).json({ success: false, message: "Incorrect password" });
-        }
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) return res.status(400).json({ success: false, message: "Incorrect password" });
 
-        let token = await genToken(user._id);
+        const token = genToken(user._id);
         res.cookie("token", token, cookieOptions);
 
         return res.status(200).json({ 
@@ -67,42 +55,33 @@ export const login = async (req, res) => {
             user: { _id: user._id, name: user.name, email: user.email } 
         });
     } catch (error) {
-        console.error("Login Error:", error);
-        return res.status(500).json({ success: false, message: `Login error: ${error.message}` });
+        return res.status(500).json({ success: false, message: error.message });
     }
 };
 
 // --- LOGOUT ---
 export const logOut = async (req, res) => {
     try {
-        res.clearCookie("token", {
-            ...cookieOptions,
-            maxAge: 0
-        });
+        res.clearCookie("token", { ...cookieOptions, maxAge: 0 });
         return res.status(200).json({ success: true, message: "Logged out successfully" });
     } catch (error) {
-        console.error("Logout Error:", error);
-        return res.status(500).json({ success: false, message: `Logout error: ${error.message}` });
+        return res.status(500).json({ success: false, message: "Logout error" });
     }
 };
 
 // --- GOOGLE LOGIN ---
 export const googleLogin = async (req, res) => {
     try {
-        let { name, email } = req.body;
+        const { name, email } = req.body;
         let user = await User.findOne({ email });
-        
         if (!user) {
             user = await User.create({ name, email });
         }
-
-        let token = await genToken(user._id);
+        const token = genToken(user._id);
         res.cookie("token", token, cookieOptions);
-
         return res.status(200).json({ success: true, user });
     } catch (error) {
-        console.error("Google Login Error:", error);
-        return res.status(500).json({ success: false, message: `Google login error: ${error.message}` });
+        return res.status(500).json({ success: false, message: error.message });
     }
 };
 
@@ -112,7 +91,7 @@ export const adminLogin = async (req, res) => {
         const { email, password } = req.body;
 
         if (email === process.env.ADMIN_EMAIL && password === process.env.ADMIN_PASSWORD) {
-            const token = await genToken1(email);
+            const token = genToken1(email); // Creates token with { email } key
 
             res.cookie("token", token, {
                 ...cookieOptions,
@@ -125,29 +104,24 @@ export const adminLogin = async (req, res) => {
                 adminData: { email, role: 'admin' } 
             });
         }
-
         return res.status(401).json({ success: false, message: "Invalid Admin Credentials" });
-
     } catch (error) {
-        console.error("Admin Login Error:", error);
-        return res.status(500).json({ success: false, message: `Admin Login error: ${error.message}` });
+        return res.status(500).json({ success: false, message: error.message });
     }
 };
 
-// --- GET ADMIN DATA (Persistent Session) ---
+// --- GET ADMIN DATA (Session Persistence Fix) ---
 export const getAdmin = async (req, res) => {
     try {
         const token = req.cookies.token;
-
         if (!token) {
-            return res.status(401).json({ success: false, message: "Unauthorized: No token provided" });
+            return res.status(401).json({ success: false, message: "Unauthorized: No token" });
         }
 
-        // Verify the token (using your JWT secret)
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-        // Check if the decoded email matches the admin email
-        if (decoded.id === process.env.ADMIN_EMAIL) {
+        // SYNC FIX: Using decoded.email to match the key from genToken1
+        if (decoded.email === process.env.ADMIN_EMAIL) {
             return res.status(200).json({ 
                 success: true, 
                 adminData: { email: process.env.ADMIN_EMAIL, role: 'admin' } 
@@ -156,7 +130,6 @@ export const getAdmin = async (req, res) => {
 
         return res.status(403).json({ success: false, message: "Forbidden: Not an admin" });
     } catch (error) {
-        console.error("Get Admin Error:", error);
-        return res.status(401).json({ success: false, message: "Invalid or expired token" });
+        return res.status(401).json({ success: false, message: "Invalid or expired session" });
     }
 };

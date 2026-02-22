@@ -1,22 +1,23 @@
-import jwt from "jsonwebtoken"
+import jwt from "jsonwebtoken";
 
-export const genToken = async (userId) => {
-   try {
-    let token = await jwt.sign({userId} , process.env.JWT_SECRET , {expiresIn:"7d"})
-    return token
-   } catch (error) {
-     console.log("token error")
-   }
+// For regular users (Registration/Login)
+export const genToken = (userId) => {
+    try {
+        // Storing userId under the key 'id'
+        return jwt.sign({ id: userId }, process.env.JWT_SECRET, { expiresIn: "7d" });
+    } catch (error) {
+        console.log("User token error:", error);
+        return null;
+    }
+};
 
-    
-}
-export const genToken1 = async (email) => {
-   try {
-    let token = await jwt.sign({email} , process.env.JWT_SECRET , {expiresIn:"7d"})
-    return token
-   } catch (error) {
-     console.log("token error")
-   }
-
-    
-}
+// For Admin (Admin Login)
+export const genToken1 = (email) => {
+    try {
+        // Storing admin email under the key 'email'
+        return jwt.sign({ email }, process.env.JWT_SECRET, { expiresIn: "7d" });
+    } catch (error) {
+        console.log("Admin token error:", error);
+        return null;
+    }
+};
