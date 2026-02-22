@@ -7,23 +7,27 @@ export const adminDataContext = createContext();
 const AdminContextProvider = (props) => {
     const [adminData, setAdminData] = useState(null);
     
-    // Absolute URL for the Backend
-    const backendUrl = "https://onecart-62p0.onrender.com";
+    // --- THE FIX ---
+    // If the Admin is served from the same Render service, we use an empty string.
+    // This forces the request to stay on the same domain (No CORS issues!).
+    const backendUrl = ""; 
 
-    // 1. Admin Login Function (Add this here!)
+    // 1. Admin Login Function
     const loginAdmin = async (email, password) => {
         try {
+            // Note: URL becomes "/api/auth/adminlogin"
             const { data } = await axios.post(`${backendUrl}/api/auth/adminlogin`, 
                 { email, password }, 
                 { withCredentials: true }
             );
 
             if (data.success) {
-                setAdminData(data.adminData); // Match the 'adminData' key from our new controller
+                setAdminData(data.adminData); 
                 toast.success("Welcome, Admin!");
                 return true;
             }
         } catch (error) {
+            console.error("Login detail:", error);
             const errorMsg = error.response?.data?.message || "Login Failed";
             toast.error(errorMsg);
             return false;
@@ -33,13 +37,12 @@ const AdminContextProvider = (props) => {
     // 2. Function to fetch Admin Profile
     const getAdmin = async () => {
         try {
-            // Check if your route is /api/auth or /api/user
             const { data } = await axios.get(`${backendUrl}/api/auth/getadmin`, { 
                 withCredentials: true 
             });
 
             if (data.success) {
-                setAdminData(data.admin || data.adminData);
+                setAdminData(data.adminData);
             } else {
                 setAdminData(null);
             }
@@ -52,7 +55,8 @@ const AdminContextProvider = (props) => {
     // 3. Logout Function
     const logoutAdmin = async () => {
         try {
-            const { data } = await axios.post(`${backendUrl}/api/auth/logOut`, {}, { 
+            // Updated to /api/auth/logout (lowercase 'o' to match our authRoutes.js)
+            const { data } = await axios.post(`${backendUrl}/api/auth/logout`, {}, { 
                 withCredentials: true 
             });
             if (data.success) {
@@ -71,7 +75,7 @@ const AdminContextProvider = (props) => {
     const value = {
         adminData,
         setAdminData,
-        loginAdmin, // Now you can call this from your Login.jsx
+        loginAdmin,
         getAdmin,
         logoutAdmin,
         backendUrl 
