@@ -2,54 +2,89 @@ import { v2 as cloudinary } from 'cloudinary';
 import productModel from '../models/productModel.js';
 import fs from 'fs';
 
+// Cloudinary Configuration
 cloudinary.config({
     cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
     api_key: process.env.CLOUDINARY_API_KEY,
     api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
+// --- ADD PRODUCT ---
 export const addProduct = async (req, res) => {
     try {
         const { name, description, price, category, subCategory, sizes, bestseller } = req.body;
-        const images = [req.files.image1?.[0], req.files.image2?.[0], req.files.image3?.[0], req.files.image4?.[0]].filter(Boolean);
 
+        // 1. Extract images safely from req.files
+        const image1 = req.files?.image1?.[0];
+        const image2 = req.files?.image2?.[0];
+        const image3 = req.files?.image3?.[0];
+        const image4 = req.files?.image4?.[0];
+
+        const images = [image1, image2, image3, image4].filter((item) => item !== undefined);
+
+        // 2. Upload images to Cloudinary
         let imagesUrl = await Promise.all(
             images.map(async (item) => {
                 let result = await cloudinary.uploader.upload(item.path, { resource_type: 'image' });
-                if (fs.existsSync(item.path)) fs.unlinkSync(item.path);
+                
+                // IMPORTANT: Delete the local file from the server after Cloudinary upload
+                if (fs.existsSync(item.path)) {
+                    fs.unlinkSync(item.path);
+                }
                 return result.secure_url;
             })
         );
 
-        const product = new productModel({
-            name, description, category, price: Number(price), subCategory,
-            bestseller: bestseller === "true",
-            sizes: JSON.parse(sizes),
+        // 3. Prepare Product Data
+        const productData = {
+            name,
+            description,
+            category,
+            price: Number(price),
+            subCategory,
+            bestseller: bestseller === "true", // Converts string "true" to Boolean true
+            // Safer way to handle sizes if they are sent as a JSON string
+            sizes: typeof sizes === 'string' ? JSON.parse(sizes) : sizes,
             image: imagesUrl,
             date: Date.now()
-        });
+        };
 
+        // 4. Save to MongoDB
+        const product = new productModel(productData);
         await product.save();
-        res.json({ success: true, message: "Product Added" });
+
+        return res.status(201).json({ success: true, message: "Product Added Successfully" });
+
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error("Add Product Error:", error);
+        return res.status(500).json({ success: false, message: error.message });
     }
 };
 
+// --- LIST ALL PRODUCTS ---
 export const listProducts = async (req, res) => {
     try {
         const products = await productModel.find({});
-        res.json({ success: true, products });
+        res.status(200).json({ success: true, products });
     } catch (error) {
+        console.error("List Products Error:", error);
         res.status(500).json({ success: false, message: error.message });
     }
 };
 
+// --- REMOVE PRODUCT ---
 export const removeProduct = async (req, res) => {
     try {
-        await productModel.findByIdAndDelete(req.body.id);
-        res.json({ success: true, message: "Product Removed" });
+        // We use req.body.id to find and delete the product
+        const deletedProduct = await productModel.findByIdAndDelete(req.body.id);
+        
+        if (!deletedProduct) {
+            return res.status(404).json({ success: false, message: "Product not found" });
+        }
+
+        res.status(200).json({ success: true, message: "Product Removed Successfully" });
     } catch (error) {
+        console.error("Remove Product Error:", error);
         res.status(500).json({ success: false, message: error.message });
     }
 };
