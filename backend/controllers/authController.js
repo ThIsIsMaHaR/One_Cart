@@ -7,10 +7,9 @@ import jwt from 'jsonwebtoken';
 // Helper for environment-aware cookie settings
 const cookieOptions = {
     httpOnly: true,
-    // On Render (production), secure must be true. On localhost, it must be false.
-    secure: process.env.NODE_ENV === "production", 
-    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", 
-    maxAge: 7 * 24 * 60 * 60 * 1000
+    secure: true,      // Must be true on Render (HTTPS)
+    sameSite: "none",  // Must be "none" for cross-site cookies on Render
+    maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
 };
 
 // --- USER REGISTRATION ---

@@ -36,10 +36,10 @@ const AdminContextProvider = (props) => {
 
     // 2. Function to fetch Admin Profile
     const getAdmin = async () => {
-        try {
-            const { data } = await axios.get(`${backendUrl}/api/auth/getadmin`, { 
-                withCredentials: true 
-            });
+    try {
+        const { data } = await axios.get(`${backendUrl}/api/auth/getadmin`, { 
+            withCredentials: true // <--- THIS MUST BE HERE
+        });
 
             if (data.success) {
                 setAdminData(data.adminData);
