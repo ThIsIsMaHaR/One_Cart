@@ -1,25 +1,30 @@
 import jwt from 'jsonwebtoken'
 
-
-const isAuth = async (req,res,next) => {
+const isAuth = async (req, res, next) => {
     try {
-        let {token} = req.cookies
+        const { token } = req.cookies
         
-        if(!token){
-            return res.status(400).json({message:"user does not have token"})
+        if (!token) {
+            return res.status(401).json({ success: false, message: "Not Authorized, Login Again" })
         }
-        let verifyToken = jwt.verify(token,process.env.JWT_SECRET)
 
-        if(!verifyToken){
-            return res.status(400).json({message:"user does not have a valid token"})
+        // 1. Verify the token
+        const decoded = jwt.verify(token, process.env.JWT_SECRET)
+
+        // 2. THE FIX: Sync with your genToken key
+        // We used { id: userId } in token.js, so we must use decoded.id here
+        if (!decoded || !decoded.id) {
+            return res.status(401).json({ success: false, message: "Invalid Token Payload" })
         }
-        req.userId = verifyToken.userId
+
+        // 3. Attach it to the request for the controller
+        req.userId = decoded.id
+        
         next()
 
     } catch (error) {
-         console.log("isAuth error")
-    return res.status(500).json({message:`isAuth error ${error}`})
-        
+        console.log("isAuth error:", error.message)
+        return res.status(401).json({ success: false, message: "Session expired, please login again" })
     }
 }
 
