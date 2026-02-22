@@ -25,7 +25,6 @@ export const registration = async (req, res) => {
         const user = await User.create({ name, email, password: hashPassword });
         const token = genToken(user._id);
 
-        // User keeps the standard "token" name
         res.cookie("token", token, cookieOptions);
         return res.status(201).json({ 
             success: true, 
@@ -62,12 +61,27 @@ export const login = async (req, res) => {
 // --- LOGOUT ---
 export const logOut = async (req, res) => {
     try {
-        // Clear BOTH potential cookies to be safe
         res.clearCookie("token", { ...cookieOptions, maxAge: 0 });
         res.clearCookie("adminToken", { ...cookieOptions, maxAge: 0 });
         return res.status(200).json({ success: true, message: "Logged out successfully" });
     } catch (error) {
         return res.status(500).json({ success: false, message: "Logout error" });
+    }
+};
+
+// --- GOOGLE LOGIN (The missing function) ---
+export const googleLogin = async (req, res) => {
+    try {
+        const { name, email } = req.body;
+        let user = await User.findOne({ email });
+        if (!user) {
+            user = await User.create({ name, email });
+        }
+        const token = genToken(user._id);
+        res.cookie("token", token, cookieOptions);
+        return res.status(200).json({ success: true, user });
+    } catch (error) {
+        return res.status(500).json({ success: false, message: error.message });
     }
 };
 
@@ -79,7 +93,6 @@ export const adminLogin = async (req, res) => {
         if (email === process.env.ADMIN_EMAIL && password === process.env.ADMIN_PASSWORD) {
             const token = genToken1(email); 
 
-            // CHANGE: Admin gets a unique cookie name "adminToken"
             res.cookie("adminToken", token, {
                 ...cookieOptions,
                 maxAge: 1 * 24 * 60 * 60 * 1000 
@@ -97,15 +110,11 @@ export const adminLogin = async (req, res) => {
     }
 };
 
-// --- GET ADMIN DATA (Persistent Session) ---
+// --- GET ADMIN DATA ---
 export const getAdmin = async (req, res) => {
     try {
-        // CHANGE: Look for "adminToken" instead of "token"
         const token = req.cookies.adminToken;
-        
-        if (!token) {
-            return res.status(401).json({ success: false, message: "Unauthorized" });
-        }
+        if (!token) return res.status(401).json({ success: false, message: "Unauthorized" });
 
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
@@ -115,7 +124,6 @@ export const getAdmin = async (req, res) => {
                 adminData: { email: process.env.ADMIN_EMAIL, role: 'admin' } 
             });
         }
-
         return res.status(403).json({ success: false, message: "Forbidden" });
     } catch (error) {
         return res.status(401).json({ success: false, message: "Invalid session" });
