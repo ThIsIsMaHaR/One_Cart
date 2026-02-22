@@ -4,12 +4,11 @@ import bcrypt from "bcryptjs";
 import { genToken, genToken1 } from "../config/token.js";
 import jwt from 'jsonwebtoken';
 
-// Standardized cookie settings for Render Production
 const cookieOptions = {
     httpOnly: true,
-    secure: true,      // Required for HTTPS on Render
-    sameSite: "none",  // Required for cross-site cookies
-    maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+    secure: true,      
+    sameSite: "none",  
+    maxAge: 7 * 24 * 60 * 60 * 1000 
 };
 
 // --- USER REGISTRATION ---
@@ -20,12 +19,13 @@ export const registration = async (req, res) => {
         
         if (existUser) return res.status(400).json({ success: false, message: "User already exists" });
         if (!validator.isEmail(email)) return res.status(400).json({ success: false, message: "Enter a valid Email" });
-        if (password.length < 8) return res.status(400).json({ success: false, message: "Enter a stronger password" });
+        if (password.length < 8) return res.status(400).json({ success: false, message: "Min 8 characters required" });
 
         const hashPassword = await bcrypt.hash(password, 10);
         const user = await User.create({ name, email, password: hashPassword });
         const token = genToken(user._id);
 
+        // User keeps the standard "token" name
         res.cookie("token", token, cookieOptions);
         return res.status(201).json({ 
             success: true, 
@@ -62,26 +62,12 @@ export const login = async (req, res) => {
 // --- LOGOUT ---
 export const logOut = async (req, res) => {
     try {
+        // Clear BOTH potential cookies to be safe
         res.clearCookie("token", { ...cookieOptions, maxAge: 0 });
+        res.clearCookie("adminToken", { ...cookieOptions, maxAge: 0 });
         return res.status(200).json({ success: true, message: "Logged out successfully" });
     } catch (error) {
         return res.status(500).json({ success: false, message: "Logout error" });
-    }
-};
-
-// --- GOOGLE LOGIN ---
-export const googleLogin = async (req, res) => {
-    try {
-        const { name, email } = req.body;
-        let user = await User.findOne({ email });
-        if (!user) {
-            user = await User.create({ name, email });
-        }
-        const token = genToken(user._id);
-        res.cookie("token", token, cookieOptions);
-        return res.status(200).json({ success: true, user });
-    } catch (error) {
-        return res.status(500).json({ success: false, message: error.message });
     }
 };
 
@@ -91,11 +77,12 @@ export const adminLogin = async (req, res) => {
         const { email, password } = req.body;
 
         if (email === process.env.ADMIN_EMAIL && password === process.env.ADMIN_PASSWORD) {
-            const token = genToken1(email); // Creates token with { email } key
+            const token = genToken1(email); 
 
-            res.cookie("token", token, {
+            // CHANGE: Admin gets a unique cookie name "adminToken"
+            res.cookie("adminToken", token, {
                 ...cookieOptions,
-                maxAge: 1 * 24 * 60 * 60 * 1000 // 1 day
+                maxAge: 1 * 24 * 60 * 60 * 1000 
             });
 
             return res.status(200).json({ 
@@ -110,17 +97,18 @@ export const adminLogin = async (req, res) => {
     }
 };
 
-// --- GET ADMIN DATA (Session Persistence Fix) ---
+// --- GET ADMIN DATA (Persistent Session) ---
 export const getAdmin = async (req, res) => {
     try {
-        const token = req.cookies.token;
+        // CHANGE: Look for "adminToken" instead of "token"
+        const token = req.cookies.adminToken;
+        
         if (!token) {
-            return res.status(401).json({ success: false, message: "Unauthorized: No token" });
+            return res.status(401).json({ success: false, message: "Unauthorized" });
         }
 
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-        // SYNC FIX: Using decoded.email to match the key from genToken1
         if (decoded.email === process.env.ADMIN_EMAIL) {
             return res.status(200).json({ 
                 success: true, 
@@ -128,8 +116,8 @@ export const getAdmin = async (req, res) => {
             });
         }
 
-        return res.status(403).json({ success: false, message: "Forbidden: Not an admin" });
+        return res.status(403).json({ success: false, message: "Forbidden" });
     } catch (error) {
-        return res.status(401).json({ success: false, message: "Invalid or expired session" });
+        return res.status(401).json({ success: false, message: "Invalid session" });
     }
 };
