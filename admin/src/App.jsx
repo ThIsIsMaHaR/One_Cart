@@ -16,17 +16,19 @@ function App() {
   useEffect(() => {
     const verifyAdmin = async () => {
       try {
-        if (getAdmin) {
+        // If we don't have adminData, try to fetch it from the server cookie
+        if (!adminData && getAdmin) {
           await getAdmin();
         }
       } catch (error) {
         console.error("Auth check failed", error);
       } finally {
+        // Stop the loading spinner
         setCheckingAuth(false);
       }
     };
     verifyAdmin();
-  }, [getAdmin]);
+  }, []); // Only run once on mount
 
   if (checkingAuth) {
     return (
@@ -38,18 +40,23 @@ function App() {
 
   return (
     <>
-      <ToastContainer />
+      <ToastContainer position="top-right" autoClose={3000} />
       <Routes>
-        {/* If not logged in, any path shows Login */}
+        {/* Protected Routing Logic */}
         {!adminData ? (
-          <Route path="*" element={<Login />} />
-        ) : (
+          // Case 1: Not logged in -> Show ONLY Login page
           <>
-            {/* Note: with basename="/admin", path="/" actually means "/admin/" */}
+            <Route path="/login" element={<Login />} />
+            <Route path="*" element={<Navigate to="/login" />} />
+          </>
+        ) : (
+          // Case 2: Logged in -> Show Admin Dashboard
+          <>
             <Route path='/' element={<Home />} />
             <Route path='/add' element={<Add />} />
             <Route path='/lists' element={<Lists />} />
             <Route path='/orders' element={<Orders />} />
+            {/* Redirect /login to home if they are already logged in */}
             <Route path='/login' element={<Navigate to="/" />} />
             <Route path="*" element={<Navigate to="/" />} />
           </>

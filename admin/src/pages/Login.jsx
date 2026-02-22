@@ -16,7 +16,7 @@ function Login() {
   const { adminData, getAdmin, backendUrl } = useContext(adminDataContext)
   const navigate = useNavigate()
 
-  // Redirect to Dashboard if already logged in
+  // 1. Redirect to Dashboard if adminData becomes available globally
   useEffect(() => {
     if (adminData) {
       navigate("/")
@@ -28,7 +28,7 @@ function Login() {
     setLoading(true)
 
     try {
-      // Logic check: Ensure we are hitting the backend fixed with CORS
+      // Logic: Using backendUrl (which is "" for same-domain)
       const result = await axios.post(`${backendUrl}/api/auth/adminlogin`, 
         { email, password }, 
         { withCredentials: true }
@@ -38,10 +38,15 @@ function Login() {
         console.log("Login Success:", result.data)
         toast.success("Admin Login Successful")
         
-        // Refresh the admin data in the Context to trigger the useEffect redirect
+        // 2. Fetch the latest admin data to update the Context state
         if (getAdmin) {
           await getAdmin()
         }
+        
+        // 3. FORCE NAVIGATION: Don't wait for the useEffect
+        // If the state update is slow, this moves the user immediately
+        navigate("/")
+        
       } else {
         toast.error(result.data.message || "Invalid Credentials")
       }
