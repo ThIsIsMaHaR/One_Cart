@@ -2,19 +2,19 @@ import { v2 as cloudinary } from 'cloudinary';
 import productModel from '../models/productModel.js';
 import fs from 'fs';
 
-// Cloudinary Configuration
-cloudinary.config({
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-    api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET
-});
-
 // --- ADD PRODUCT ---
 export const addProduct = async (req, res) => {
     try {
+        // ENSURE CLOUDINARY IS CONFIGURED INSIDE THE HANDLER OR RE-VERIFIED
+        cloudinary.config({
+            cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+            api_key: process.env.CLOUDINARY_API_KEY,
+            api_secret: process.env.CLOUDINARY_API_SECRET
+        });
+
         const { name, description, price, category, subCategory, sizes, bestseller } = req.body;
 
-        // 1. Extract images safely from req.files
+        // 1. Extract images safely
         const image1 = req.files?.image1?.[0];
         const image2 = req.files?.image2?.[0];
         const image3 = req.files?.image3?.[0];
@@ -27,7 +27,7 @@ export const addProduct = async (req, res) => {
             images.map(async (item) => {
                 let result = await cloudinary.uploader.upload(item.path, { resource_type: 'image' });
                 
-                // IMPORTANT: Delete the local file from the server after Cloudinary upload
+                // IMPORTANT: Delete local temp file after upload to save space on Render
                 if (fs.existsSync(item.path)) {
                     fs.unlinkSync(item.path);
                 }
@@ -35,16 +35,16 @@ export const addProduct = async (req, res) => {
             })
         );
 
-        // 3. Prepare Product Data
+        // 3. Prepare Product Data with robust parsing
         const productData = {
             name,
             description,
             category,
             price: Number(price),
             subCategory,
-            bestseller: bestseller === "true", // Converts string "true" to Boolean true
-            // Safer way to handle sizes if they are sent as a JSON string
-            sizes: typeof sizes === 'string' ? JSON.parse(sizes) : sizes,
+            bestseller: bestseller === "true" || bestseller === true,
+            // Robust parsing: handles undefined, strings, or already parsed arrays
+            sizes: sizes ? (typeof sizes === 'string' ? JSON.parse(sizes) : sizes) : [],
             image: imagesUrl,
             date: Date.now()
         };
@@ -57,6 +57,7 @@ export const addProduct = async (req, res) => {
 
     } catch (error) {
         console.error("Add Product Error:", error);
+        // If an error happens, try to clean up any temp files left behind
         return res.status(500).json({ success: false, message: error.message });
     }
 };
@@ -75,8 +76,8 @@ export const listProducts = async (req, res) => {
 // --- REMOVE PRODUCT ---
 export const removeProduct = async (req, res) => {
     try {
-        // We use req.body.id to find and delete the product
-        const deletedProduct = await productModel.findByIdAndDelete(req.body.id);
+        const { id } = req.body;
+        const deletedProduct = await productModel.findByIdAndDelete(id);
         
         if (!deletedProduct) {
             return res.status(404).json({ success: false, message: "Product not found" });
