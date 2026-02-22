@@ -6,35 +6,34 @@ export const userDataContext = createContext()
 
 function UserContext({ children }) {
     const [userData, setUserData] = useState(null)
-    // Add a loading state to prevent premature redirects
     const [loading, setLoading] = useState(true) 
     const { serverUrl } = useContext(authDataContext)
 
     const getCurrentUser = async () => {
         try {
-            // If serverUrl is not yet defined, we can't fetch
-            if (serverUrl === undefined) return;
+            setLoading(true)
+            // Use relative path if serverUrl is empty
+            const baseUrl = serverUrl || ""
 
-            const result = await axios.get(`${serverUrl}/api/user/getcurrentuser`, { 
+            const result = await axios.get(`${baseUrl}/api/user/getcurrentuser`, { 
                 withCredentials: true 
             })
             
-            if (result.data) {
-                setUserData(result.data)
+            // Sync with backend: result.data.user
+            if (result.data && result.data.success) {
+                setUserData(result.data.user)
             } else {
                 setUserData(null)
             }
         } catch (error) {
-            setUserData(null)
+            setUserData(null);
             console.error("Context User Fetch Error:", error)
         } finally {
-            // Whether success or error, we are done loading
             setLoading(false)
         }
     }
 
     useEffect(() => {
-        // Only fetch if serverUrl is a string (even if empty string "")
         if (typeof serverUrl === 'string') {
             getCurrentUser()
         }
@@ -44,7 +43,7 @@ function UserContext({ children }) {
         userData,
         setUserData,
         getCurrentUser,
-        loading // Export loading so components know when to wait
+        loading 
     }
 
     return (
