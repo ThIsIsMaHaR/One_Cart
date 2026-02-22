@@ -2,12 +2,14 @@ import User from "../models/userModel.js";
 import validator from "validator";
 import bcrypt from "bcryptjs";
 import { genToken, genToken1 } from "../config/token.js";
+import jwt from 'jsonwebtoken';
 
-// Helper for production-ready cookie settings
+// Helper for environment-aware cookie settings
 const cookieOptions = {
     httpOnly: true,
-    secure: true,      // Essential for Render (HTTPS)
-    sameSite: "none",  // Essential for Cross-Site requests on Render
+    // On Render (production), secure must be true. On localhost, it must be false.
+    secure: process.env.NODE_ENV === "production", 
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", 
     maxAge: 7 * 24 * 60 * 60 * 1000
 };
 
@@ -33,7 +35,6 @@ export const registration = async (req, res) => {
 
         res.cookie("token", token, cookieOptions);
         
-        // Return success flag and user data (excluding password)
         return res.status(201).json({ 
             success: true, 
             user: { _id: user._id, name: user.name, email: user.email } 
@@ -76,9 +77,8 @@ export const login = async (req, res) => {
 export const logOut = async (req, res) => {
     try {
         res.clearCookie("token", {
-            httpOnly: true,
-            secure: true,
-            sameSite: "none"
+            ...cookieOptions,
+            maxAge: 0
         });
         return res.status(200).json({ success: true, message: "Logged out successfully" });
     } catch (error) {
@@ -112,15 +112,12 @@ export const adminLogin = async (req, res) => {
     try {
         const { email, password } = req.body;
 
-        // Validates against Render Environment Variables
         if (email === process.env.ADMIN_EMAIL && password === process.env.ADMIN_PASSWORD) {
-            
-            // Uses genToken1 for Admin (usually signs with email instead of ID)
             const token = await genToken1(email);
 
             res.cookie("token", token, {
                 ...cookieOptions,
-                maxAge: 1 * 24 * 60 * 60 * 1000 // Admin session: 1 day
+                maxAge: 1 * 24 * 60 * 60 * 1000 // 1 day
             });
 
             return res.status(200).json({ 
@@ -135,5 +132,32 @@ export const adminLogin = async (req, res) => {
     } catch (error) {
         console.error("Admin Login Error:", error);
         return res.status(500).json({ success: false, message: `Admin Login error: ${error.message}` });
+    }
+};
+
+// --- GET ADMIN DATA (Persistent Session) ---
+export const getAdmin = async (req, res) => {
+    try {
+        const token = req.cookies.token;
+
+        if (!token) {
+            return res.status(401).json({ success: false, message: "Unauthorized: No token provided" });
+        }
+
+        // Verify the token (using your JWT secret)
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+        // Check if the decoded email matches the admin email
+        if (decoded.id === process.env.ADMIN_EMAIL) {
+            return res.status(200).json({ 
+                success: true, 
+                adminData: { email: process.env.ADMIN_EMAIL, role: 'admin' } 
+            });
+        }
+
+        return res.status(403).json({ success: false, message: "Forbidden: Not an admin" });
+    } catch (error) {
+        console.error("Get Admin Error:", error);
+        return res.status(401).json({ success: false, message: "Invalid or expired token" });
     }
 };
