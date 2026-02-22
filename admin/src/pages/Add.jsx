@@ -22,8 +22,7 @@ function Add() {
   const [sizes, setSizes] = useState([]);
   const [loading, setLoading] = useState(false);
   
-  // We keep serverUrl here for local testing fallback, but we'll use a relative path for production
-  const { serverUrl, token } = useContext(authDataContext);
+  const { token } = useContext(authDataContext);
 
   const handleAddProduct = async (e) => {
     e.preventDefault();
@@ -49,12 +48,11 @@ function Add() {
       if (image3) formData.append("image3", image3);
       if (image4) formData.append("image4", image4);
 
-      // FIXED: Using relative path to match productRoutes.js "/add"
-      // Added Authorization header because we added adminAuth to the route
+      // We use a relative path. This works because the Admin is served from the same domain as the API.
       const response = await axios.post("/api/product/add", formData, {
         headers: { 
           "Content-Type": "multipart/form-data",
-          token: token // Sending the admin token for authentication
+          "token": token // Ensure this matches what your adminAuth middleware expects
         }
       });
 
@@ -76,7 +74,9 @@ function Add() {
       }
     } catch (error) {
       console.error("Upload Error:", error);
-      toast.error(error.response?.data?.message || "Error uploading product");
+      // This will show you the ACTUAL server error (like "Cloudinary Error" or "Database Error")
+      const errorMsg = error.response?.data?.message || "Error uploading product";
+      toast.error(errorMsg);
     } finally {
       setLoading(false);
     }

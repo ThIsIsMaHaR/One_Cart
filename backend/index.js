@@ -3,6 +3,7 @@ import cors from 'cors';
 import 'dotenv/config';
 import cookieParser from 'cookie-parser';
 import path from 'path';
+import fs from 'fs';
 import { fileURLToPath } from 'url';
 import connectDB from './config/db.js';
 
@@ -23,7 +24,14 @@ const __dirname = path.dirname(__filename);
 // 1. Database Connection
 connectDB();
 
-// 2. THE NUCLEAR CORS FIX
+// 2. CREATE UPLOADS FOLDER (Crucial for Render 500 Fix)
+// This ensures Multer has a place to put files before they go to Cloudinary
+const uploadDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir);
+}
+
+// 3. THE NUCLEAR CORS FIX
 const allowedOrigins = [
   "https://e-comm-onecart.onrender.com",
   "http://localhost:5173",
@@ -33,8 +41,7 @@ const allowedOrigins = [
 
 app.use(cors({
   origin: function (origin, callback) {
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin)) {
+    if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
       console.log("CORS blocked for origin:", origin);
@@ -43,32 +50,12 @@ app.use(cors({
   },
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept"]
+  allowedHeaders: ["Content-Type", "Authorization", "token", "X-Requested-With", "Accept"]
 }));
 
-// 3. MANUAL PREFLIGHT HANDLER
-app.use((req, res, next) => {
-  const origin = req.headers.origin;
-  if (allowedOrigins.includes(origin)) {
-    res.header("Access-Control-Allow-Origin", origin);
-  }
-  res.header("Access-Control-Allow-Credentials", "true");
-  res.header("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
-  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With, Accept");
-  
-  if (req.method === 'OPTIONS') {
-    return res.sendStatus(200);
-  }
-  next();
-});
-
 // 4. Middlewares
-// express.json() handles JSON data
 app.use(express.json());
-
-// IMPORTANT FIX: express.urlencoded handles the text fields within FormData
 app.use(express.urlencoded({ extended: true }));
-
 app.use(cookieParser());
 
 // 5. API Routes
@@ -91,7 +78,13 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, '../frontend/dist', 'index.html'));
 });
 
-// 7. Start Server
+// 7. Global Error Handler (Prevents server crash/500 without info)
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({ success: false, message: "Internal Server Error", error: err.message });
+});
+
+// 8. Start Server
 app.listen(port, () => {
   console.log(`🚀 Server running on port ${port}`);
 });
