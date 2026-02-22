@@ -22,12 +22,12 @@ function Add() {
   const [sizes, setSizes] = useState([]);
   const [loading, setLoading] = useState(false);
   
-  const { serverUrl } = useContext(authDataContext);
+  // We keep serverUrl here for local testing fallback, but we'll use a relative path for production
+  const { serverUrl, token } = useContext(authDataContext);
 
   const handleAddProduct = async (e) => {
     e.preventDefault();
     
-    // Quick validation: Ensure at least one size and one image
     if (sizes.length === 0) return toast.error("Please select at least one size");
     if (!image1 && !image2 && !image3 && !image4) return toast.error("Please upload at least one image");
 
@@ -36,7 +36,6 @@ function Add() {
     try {
       const formData = new FormData();
 
-      // Basic Text Data
       formData.append("name", name);
       formData.append("description", description);
       formData.append("price", price);
@@ -45,22 +44,24 @@ function Add() {
       formData.append("bestseller", bestseller); 
       formData.append("sizes", JSON.stringify(sizes));
 
-      // Image Data - Must match the keys in productRoutes.js
       if (image1) formData.append("image1", image1);
       if (image2) formData.append("image2", image2);
       if (image3) formData.append("image3", image3);
       if (image4) formData.append("image4", image4);
 
-      // URL FIX: Match the backend route '/api/product/add'
-      const response = await axios.post(`${serverUrl}/api/product/add`, formData, {
-        withCredentials: true,
-        headers: { "Content-Type": "multipart/form-data" }
+      // FIXED: Using relative path to match productRoutes.js "/add"
+      // Added Authorization header because we added adminAuth to the route
+      const response = await axios.post("/api/product/add", formData, {
+        headers: { 
+          "Content-Type": "multipart/form-data",
+          token: token // Sending the admin token for authentication
+        }
       });
 
       if (response.data.success) {
         toast.success(response.data.message || "Product Added!");
         
-        // Resetting form for next entry
+        // Resetting form
         setName("");
         setDescription("");
         setPrice("");
@@ -92,7 +93,6 @@ function Add() {
           
           <h2 className='text-[25px] md:text-[40px] text-white font-bold'>Add Product</h2>
 
-          {/* Image Upload Section */}
           <div>
             <p className='text-[18px] font-semibold mb-3'>Upload Images</p>
             <div className='flex gap-4 flex-wrap'>
@@ -122,7 +122,6 @@ function Add() {
             </div>
           </div>
 
-          {/* Product Basic Info */}
           <div className='flex flex-col gap-2'>
             <p className='text-[18px] font-semibold'>Product Name</p>
             <input 
@@ -146,7 +145,6 @@ function Add() {
             />
           </div>
 
-          {/* Category Selection */}
           <div className='flex gap-10 flex-wrap'>
             <div>
               <p className='font-semibold mb-2'>Category</p>
@@ -185,7 +183,6 @@ function Add() {
             </div>
           </div>
 
-          {/* Sizes Selection */}
           <div>
             <p className='font-semibold mb-3'>Product Sizes</p>
             <div className='flex gap-3 mt-2'>
@@ -205,19 +202,17 @@ function Add() {
             </div>
           </div>
 
-          {/* Bestseller Checkbox */}
           <div className='flex items-center gap-3 bg-[#1a1a1a] p-3 rounded-lg w-fit border border-gray-800 cursor-pointer' onClick={() => setBestSeller(!bestseller)}>
             <input 
               type="checkbox" 
               id="bestseller" 
               checked={bestseller} 
-              onChange={() => {}} // Handled by div click
+              onChange={() => {}} 
               className='w-5 h-5 cursor-pointer' 
             />
             <label htmlFor="bestseller" className='cursor-pointer select-none'>Add to Bestseller</label>
           </div>
 
-          {/* Submit Button */}
           <button 
             type="submit"
             disabled={loading}
