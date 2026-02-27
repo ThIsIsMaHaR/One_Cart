@@ -11,7 +11,7 @@ import connectDB from './config/db.js';
 import authRouter from './routes/authRoutes.js';
 import userRouter from './routes/userRoutes.js';
 import productRouter from './routes/productRoutes.js';
-import cartRouter from './routes/cartRoutes.js';
+import cartRouter from './routes/cartRouter.js'; // Note: Ensure this matches your file name
 import orderRouter from './routes/orderRoutes.js';
 
 const app = express();
@@ -66,6 +66,9 @@ app.use('/api/cart', cartRouter);
 app.use('/api/order', orderRouter);
 
 // 6. STATIC FILE SERVING (Production)
+// ADDED: Serve the uploads folder so images are accessible via URL
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
 // Serve Admin Panel
 app.use('/admin', express.static(path.join(__dirname, '../admin/dist')));
 app.get('/admin/*', (req, res) => {
