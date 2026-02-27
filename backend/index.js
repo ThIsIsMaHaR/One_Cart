@@ -30,12 +30,16 @@ if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir);
 }
 
-// 3. HARDCODED CORS & PREFLIGHT (MUST BE FIRST)
-// This manually injects headers to satisfy the browser before any logic runs
+// 3. MANUAL CORS & PREFLIGHT HANDLER (CRITICAL: MUST BE FIRST)
+// This satisfies the browser BEFORE any other middleware like Helmet or Auth
 app.use((req, res, next) => {
-    const allowedOrigins = ["https://e-comm-onecart.onrender.com", "http://localhost:5173"];
+    const allowedOrigins = [
+        "https://e-comm-onecart.onrender.com", 
+        "http://localhost:5173", 
+        "http://localhost:5174"
+    ];
     const origin = req.headers.origin;
-    
+
     if (allowedOrigins.includes(origin)) {
         res.header("Access-Control-Allow-Origin", origin);
     }
@@ -44,7 +48,7 @@ app.use((req, res, next) => {
     res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
     res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization, token, adminToken");
 
-    // Immediately stop and return 200 for the browser's "preflight" OPTIONS check
+    // Handle Preflight security check
     if (req.method === "OPTIONS") {
         return res.status(200).end();
     }
@@ -95,7 +99,7 @@ app.get('/admin/*', (req, res) => {
   res.sendFile(path.join(__dirname, '../admin/dist', 'index.html'));
 });
 
-// Serve Frontend
+// Serve Frontend (Main Site)
 app.use(express.static(path.join(__dirname, '../frontend/dist')));
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, '../frontend/dist', 'index.html'));
@@ -103,7 +107,7 @@ app.get('*', (req, res) => {
 
 // 8. GLOBAL ERROR HANDLER
 app.use((err, req, res, next) => {
-  console.error("Global Error:", err.message);
+  console.error("Global Error Logged:", err.message);
   res.status(500).json({ 
     success: false, 
     message: "Internal Server Error", 
