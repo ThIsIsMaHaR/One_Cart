@@ -7,28 +7,27 @@ import { toast } from 'react-toastify'
 export const shopDataContext = createContext()
 
 function ShopContext({ children }) {
-  const [products, setProducts] = useState([]) // Initialize as empty array
+  const [products, setProducts] = useState([])
   const [search, setSearch] = useState('')
   const { userData } = useContext(userDataContext)
   const [showSearch, setShowSearch] = useState(false)
-  const { serverUrl } = useContext(authDataContext)
+  const { serverUrl } = useContext(authDataContext) // serverUrl is retrieved here
   const [cartItem, setCartItem] = useState({})
   const [loading, setLoading] = useState(false)
   const currency = '₹';
   const delivery_fee = 40;
 
-  // FIX: Access the .products array from the new backend response object
   const getProducts = async () => {
     try {
       const result = await axios.get(serverUrl + "/api/product/list")
       if (result.data.success) {
-        setProducts(result.data.products) // Correctly setting the array
+        setProducts(result.data.products)
       } else {
         setProducts(Array.isArray(result.data) ? result.data : [])
       }
     } catch (error) {
       console.log("Fetch products error:", error)
-      setProducts([]) // Fallback to empty array to prevent crashes
+      setProducts([])
     }
   }
 
@@ -71,7 +70,6 @@ function ShopContext({ children }) {
   const getUserCart = async () => {
     try {
       const result = await axios.post(serverUrl + '/api/cart/get', {}, { withCredentials: true })
-      // Ensure result.data is an object or array as expected by your cart logic
       setCartItem(result.data || {})
     } catch (error) {
       console.log("Get cart error:", error)
@@ -109,7 +107,6 @@ function ShopContext({ children }) {
   const getCartAmount = () => {
     let totalAmount = 0;
     for (const items in cartItem) {
-      // FIX: Added check to ensure itemInfo exists before accessing .price
       let itemInfo = products.find((product) => product._id === items);
       if (itemInfo) {
         for (const item in cartItem[items]) {
@@ -132,10 +129,14 @@ function ShopContext({ children }) {
     if (userData) {
       getUserCart()
     }
-  }, [userData]) // Only fetch cart when user data (login state) is available
+  }, [userData])
 
+  // ADDED serverUrl to the value object below
   const value = {
-    products, currency, delivery_fee, getProducts, search, setSearch, showSearch, setShowSearch, cartItem, addtoCart, getCartCount, setCartItem, updateQuantity, getCartAmount, loading
+    products, currency, delivery_fee, getProducts, 
+    search, setSearch, showSearch, setShowSearch, 
+    cartItem, addtoCart, getCartCount, setCartItem, 
+    updateQuantity, getCartAmount, loading, serverUrl
   }
 
   return (
