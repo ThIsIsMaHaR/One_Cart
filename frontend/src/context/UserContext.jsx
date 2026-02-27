@@ -9,16 +9,17 @@ function UserContext({ children }) {
     const [loading, setLoading] = useState(true) 
     const { serverUrl } = useContext(authDataContext)
 
-    // Using useCallback to prevent the function from being recreated on every render
     const getCurrentUser = useCallback(async () => {
-        // Don't fetch if serverUrl isn't ready yet
         if (!serverUrl) return;
 
         try {
             setLoading(true)
-            // withCredentials is now handled globally in App.jsx, 
-            // but keeping it here for safety is fine.
-            const { data } = await axios.get(`${serverUrl}/api/user/getcurrentuser`)
+            // FIXED: Added withCredentials and ensured clean URL
+            const baseUrl = serverUrl.endsWith('/') ? serverUrl.slice(0, -1) : serverUrl;
+            
+            const { data } = await axios.get(`${baseUrl}/api/user/getcurrentuser`, {
+                withCredentials: true
+            })
             
             if (data.success) {
                 setUserData(data.user)
@@ -27,7 +28,6 @@ function UserContext({ children }) {
             }
         } catch (error) {
             setUserData(null)
-            // Only log actual errors, not 401 (Unauthorized) which is expected if not logged in
             if (error.response?.status !== 401) {
                 console.error("User Profile Fetch Error:", error.response?.data?.message || error.message)
             }
@@ -37,11 +37,9 @@ function UserContext({ children }) {
     }, [serverUrl])
 
     useEffect(() => {
-        // Trigger fetch only when serverUrl is officially loaded from AuthContext
         if (serverUrl) {
             getCurrentUser()
         } else {
-            // If there's no URL, we can't be loading data
             setLoading(false)
         }
     }, [serverUrl, getCurrentUser])

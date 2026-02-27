@@ -1,14 +1,55 @@
-import React, { createContext } from 'react'
+import React, { createContext, useState, useEffect } from 'react'
+import axios from 'axios'
+import { toast } from 'react-toastify'
 
 export const authDataContext = createContext()
 
 function AuthContextProvider({ children }) {
-    // REPLACE the empty string with your live Render backend URL
-    // It should look something like: "https://one-cart-backend.onrender.com"
     const serverUrl = "https://e-comm-onecart-backend.onrender.com"; 
+    const [token, setToken] = useState(localStorage.getItem('token') || '');
+
+    // Function to handle Registration
+    const registerUser = async (name, email, password) => {
+        try {
+            const response = await axios.post(`${serverUrl}/api/auth/registration`, 
+                { name, email, password }, 
+                { withCredentials: true }
+            );
+            if (response.data.success) {
+                toast.success("Registration Successful");
+                return response.data;
+            }
+        } catch (error) {
+            console.error("Signup Error Details:", error);
+            toast.error(error.response?.data?.message || "Registration Failed");
+            throw error;
+        }
+    };
+
+    // Function to handle Login
+    const loginUser = async (email, password) => {
+        try {
+            const response = await axios.post(`${serverUrl}/api/auth/login`, 
+                { email, password }, 
+                { withCredentials: true }
+            );
+            if (response.data.success) {
+                toast.success("Login Successful");
+                return response.data;
+            }
+        } catch (error) {
+            console.error("Login Error Details:", error);
+            toast.error(error.response?.data?.message || "Login Failed");
+            throw error;
+        }
+    };
 
     const value = {
-        serverUrl
+        serverUrl,
+        registerUser,
+        loginUser,
+        token,
+        setToken
     }
 
     return (

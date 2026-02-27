@@ -11,15 +11,16 @@ function ShopContext({ children }) {
   const [search, setSearch] = useState('')
   const { userData } = useContext(userDataContext)
   const [showSearch, setShowSearch] = useState(false)
-  const { serverUrl } = useContext(authDataContext) // serverUrl is retrieved here
+  const { serverUrl } = useContext(authDataContext) 
   const [cartItem, setCartItem] = useState({})
   const [loading, setLoading] = useState(false)
   const currency = '₹';
   const delivery_fee = 40;
 
+  // UPDATED: Added withCredentials to the GET request
   const getProducts = async () => {
     try {
-      const result = await axios.get(serverUrl + "/api/product/list")
+      const result = await axios.get(serverUrl + "/api/product/list", { withCredentials: true })
       if (result.data.success) {
         setProducts(result.data.products)
       } else {
@@ -78,8 +79,10 @@ function ShopContext({ children }) {
 
   const updateQuantity = async (itemId, size, quantity) => {
     let cartData = structuredClone(cartItem);
-    cartData[itemId][size] = quantity
-    setCartItem(cartData)
+    if(cartData[itemId] && cartData[itemId][size]) {
+        cartData[itemId][size] = quantity
+        setCartItem(cartData)
+    }
 
     if (userData) {
       try {
@@ -122,16 +125,17 @@ function ShopContext({ children }) {
   }
 
   useEffect(() => {
-    getProducts()
-  }, [])
+    if (serverUrl) {
+      getProducts()
+    }
+  }, [serverUrl]) // Depend on serverUrl to ensure it's loaded
 
   useEffect(() => {
-    if (userData) {
+    if (userData && serverUrl) {
       getUserCart()
     }
-  }, [userData])
+  }, [userData, serverUrl])
 
-  // ADDED serverUrl to the value object below
   const value = {
     products, currency, delivery_fee, getProducts, 
     search, setSearch, showSearch, setShowSearch, 
