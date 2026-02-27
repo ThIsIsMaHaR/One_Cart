@@ -2,11 +2,17 @@ import jwt from 'jsonwebtoken'
 
 const adminAuth = async (req, res, next) => {
     try {
-        // IMPORTANT: Admin uses "adminToken", User uses "token"
+        // IMPORTANT: Admin uses "adminToken"
         const { adminToken } = req.cookies;
 
         if (!adminToken) {
             return res.status(401).json({ success: false, message: "Not Authorized, Login Again" });
+        }
+
+        // Check if environment variables are set (Prevents server-side mystery crashes)
+        if (!process.env.JWT_SECRET || !process.env.ADMIN_EMAIL) {
+            console.error("CRITICAL: JWT_SECRET or ADMIN_EMAIL missing in environment variables.");
+            return res.status(500).json({ success: false, message: "Server Configuration Error" });
         }
 
         // 1. Verify the admin token
@@ -17,7 +23,7 @@ const adminAuth = async (req, res, next) => {
             return res.status(403).json({ success: false, message: "Access Denied: Not an Admin" });
         }
 
-        // 3. Attach email to the request
+        // 3. Attach email to the request object for use in userController.getAdmin
         req.adminEmail = decoded.email;
 
         next();
