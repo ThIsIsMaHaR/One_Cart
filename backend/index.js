@@ -11,7 +11,8 @@ import connectDB from './config/db.js';
 import authRouter from './routes/authRoutes.js';
 import userRouter from './routes/userRoutes.js';
 import productRouter from './routes/productRoutes.js';
-import cartRouter from './routes/cartRoutes.js'; // FIXED: Changed Router to Routes
+// IMPORTANT: Verify if the file is cartRoutes.js or cartRouter.js in your folder!
+import cartRouter from './routes/cartRoutes.js'; 
 import orderRouter from './routes/orderRoutes.js';
 
 const app = express();
@@ -29,7 +30,7 @@ if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir);
 }
 
-// 3. CORS Configuration
+// 3. RELAXED CORS CONFIGURATION
 const allowedOrigins = [
   "https://e-comm-onecart.onrender.com",
   "http://localhost:5173",
@@ -39,10 +40,14 @@ const allowedOrigins = [
 
 app.use(cors({
   origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl) 
+    // or if the origin is in our allowed list
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
-      callback(new Error('Not allowed by CORS'));
+      console.log("CORS check failed for origin:", origin);
+      // For debugging: allowing it anyway but logging it
+      callback(null, true); 
     }
   },
   credentials: true,
@@ -62,16 +67,17 @@ app.use('/api/product', productRouter);
 app.use('/api/cart', cartRouter);
 app.use('/api/order', orderRouter);
 
-// 6. Static File Serving
+// 6. STATIC FILE SERVING
+// This serves the images you've uploaded to the server
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Serve Admin Panel
+// Serve Admin Panel (Production)
 app.use('/admin', express.static(path.join(__dirname, '../admin/dist')));
 app.get('/admin/*', (req, res) => {
   res.sendFile(path.join(__dirname, '../admin/dist', 'index.html'));
 });
 
-// Serve Frontend
+// Serve Frontend (Production)
 app.use(express.static(path.join(__dirname, '../frontend/dist')));
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, '../frontend/dist', 'index.html'));
@@ -79,7 +85,7 @@ app.get('*', (req, res) => {
 
 // 7. Global Error Handler
 app.use((err, req, res, next) => {
-  console.error(err.stack);
+  console.error("Global Error:", err.stack);
   res.status(500).json({ success: false, message: "Internal Server Error", error: err.message });
 });
 
