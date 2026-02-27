@@ -7,6 +7,7 @@ import helmet from 'helmet';
 import { fileURLToPath } from 'url';
 import connectDB from './config/db.js';
 
+// Route Imports
 import authRouter from './routes/authRoutes.js';
 import userRouter from './routes/userRoutes.js';
 import productRouter from './routes/productRoutes.js';
@@ -20,40 +21,52 @@ const __dirname = path.dirname(__filename);
 
 connectDB();
 
-// --- CRITICAL: MANUAL CORS HEADERS ---
-app.use((req, res, next) => {
-    res.header("Access-Control-Allow-Origin", "https://e-comm-onecart.onrender.com");
-    res.header("Access-Control-Allow-Credentials", "true");
-    res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization, token, adminToken");
+// 1. DYNAMIC CORS (Fixes the "No Access-Control-Allow-Origin" error)
+const allowedOrigins = [
+    "https://e-comm-onecart.onrender.com",
+    "http://localhost:5173"
+];
 
-    if (req.method === "OPTIONS") {
-        return res.status(200).end();
-    }
-    next();
-});
+app.use(cors({
+    origin: function (origin, callback) {
+        if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "token", "adminToken"]
+}));
 
+// 2. FIXED HELMET (Fixes the Razorpay "default-src 'self'" error)
 app.use(helmet({
     contentSecurityPolicy: {
         directives: {
             defaultSrc: ["'self'"],
             scriptSrc: ["'self'", "'unsafe-inline'", "https://checkout.razorpay.com"],
-            connectSrc: ["'self'", "https://e-comm-onecart-backend.onrender.com", "https://e-comm-onecart.onrender.com"],
+            connectSrc: ["'self'", "https://e-comm-onecart-backend.onrender.com", "https://e-comm-onecart.onrender.com", "https://lumberjack-cx.razorpay.com"],
+            frameSrc: ["'self'", "https://api.razorpay.com", "https://tds.razorpay.com"],
+            imgSrc: ["'self'", "data:", "https://res.cloudinary.com"], // Added for product images
         },
     },
     crossOriginResourcePolicy: { policy: "cross-origin" } 
 }));
 
+// 3. MIDDLEWARES
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
+// 4. API ROUTES
 app.use('/api/auth', authRouter);
 app.use('/api/user', userRouter);
 app.use('/api/product', productRouter);
 app.use('/api/cart', cartRouter);
 app.use('/api/order', orderRouter);
 
+// 5. STATIC & FRONTEND SERVING
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use(express.static(path.join(__dirname, '../frontend/dist')));
 app.get('*', (req, res) => res.sendFile(path.join(__dirname, '../frontend/dist', 'index.html')));
