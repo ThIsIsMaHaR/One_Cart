@@ -11,7 +11,7 @@ import connectDB from './config/db.js';
 import authRouter from './routes/authRoutes.js';
 import userRouter from './routes/userRoutes.js';
 import productRouter from './routes/productRoutes.js';
-// IMPORTANT: Verify if the file is cartRoutes.js or cartRouter.js in your folder!
+// FIXED: This must match the actual file name in your routes folder (cartRoutes.js)
 import cartRouter from './routes/cartRoutes.js'; 
 import orderRouter from './routes/orderRoutes.js';
 
@@ -40,13 +40,12 @@ const allowedOrigins = [
 
 app.use(cors({
   origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl) 
-    // or if the origin is in our allowed list
+    // If the request comes from an allowed origin or has no origin (like mobile/Postman)
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
       console.log("CORS check failed for origin:", origin);
-      // For debugging: allowing it anyway but logging it
+      // Fallback: still allow it for debugging but log it
       callback(null, true); 
     }
   },
@@ -68,7 +67,7 @@ app.use('/api/cart', cartRouter);
 app.use('/api/order', orderRouter);
 
 // 6. STATIC FILE SERVING
-// This serves the images you've uploaded to the server
+// Serves your product images
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Serve Admin Panel (Production)
@@ -85,7 +84,7 @@ app.get('*', (req, res) => {
 
 // 7. Global Error Handler
 app.use((err, req, res, next) => {
-  console.error("Global Error:", err.stack);
+  console.error("Global Error Log:", err.stack);
   res.status(500).json({ success: false, message: "Internal Server Error", error: err.message });
 });
 
