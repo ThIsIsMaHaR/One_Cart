@@ -30,8 +30,28 @@ if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir);
 }
 
-// 3. SECURITY & CORS (MUST BE BEFORE ROUTES)
-// Configured for Google Fonts AND Razorpay Integration
+// 3. HARDCODED CORS & PREFLIGHT (MUST BE FIRST)
+// This manually injects headers to satisfy the browser before any logic runs
+app.use((req, res, next) => {
+    const allowedOrigins = ["https://e-comm-onecart.onrender.com", "http://localhost:5173"];
+    const origin = req.headers.origin;
+    
+    if (allowedOrigins.includes(origin)) {
+        res.header("Access-Control-Allow-Origin", origin);
+    }
+    
+    res.header("Access-Control-Allow-Credentials", "true");
+    res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization, token, adminToken");
+
+    // Immediately stop and return 200 for the browser's "preflight" OPTIONS check
+    if (req.method === "OPTIONS") {
+        return res.status(200).end();
+    }
+    next();
+});
+
+// 4. SECURITY (HELMET) - Configured for Google Fonts & Razorpay
 app.use(
   helmet({
     contentSecurityPolicy: {
@@ -54,41 +74,19 @@ app.use(
   })
 );
 
-const allowedOrigins = [
-  "https://e-comm-onecart.onrender.com",
-  "http://localhost:5173",
-  "http://localhost:5174"
-];
-
-const corsOptions = {
-  origin: function (origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization", "token", "adminToken", "Accept"]
-};
-
-app.use(cors(corsOptions));
-app.options('*', cors(corsOptions)); // Handle preflight for all routes
-
-// 4. MIDDLEWARES
+// 5. MIDDLEWARES
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-// 5. API ROUTES
+// 6. API ROUTES
 app.use('/api/auth', authRouter);
 app.use('/api/user', userRouter);
 app.use('/api/product', productRouter);
 app.use('/api/cart', cartRouter);
 app.use('/api/order', orderRouter);
 
-// 6. STATIC FILE SERVING
+// 7. STATIC FILE SERVING
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Serve Admin Panel
@@ -103,7 +101,7 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, '../frontend/dist', 'index.html'));
 });
 
-// 7. GLOBAL ERROR HANDLER
+// 8. GLOBAL ERROR HANDLER
 app.use((err, req, res, next) => {
   console.error("Global Error:", err.message);
   res.status(500).json({ 
@@ -113,7 +111,7 @@ app.use((err, req, res, next) => {
   });
 });
 
-// 8. START SERVER
+// 9. START SERVER
 app.listen(port, () => {
   console.log(`🚀 Server running on port ${port}`);
 });
