@@ -31,20 +31,26 @@ if (!fs.existsSync(uploadDir)) {
 }
 
 // 3. SECURITY & CORS (MUST BE BEFORE ROUTES)
-// Custom Helmet configuration to allow Google Fonts and cross-origin connections
+// Configured for Google Fonts AND Razorpay Integration
 app.use(
   helmet({
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
-        scriptSrc: ["'self'", "'unsafe-inline'"],
+        scriptSrc: ["'self'", "'unsafe-inline'", "https://checkout.razorpay.com"],
         styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
         fontSrc: ["'self'", "https://fonts.gstatic.com"],
-        imgSrc: ["'self'", "data:", "https:"],
-        connectSrc: ["'self'", "https://e-comm-onecart-backend.onrender.com", "https://e-comm-onecart.onrender.com"],
+        imgSrc: ["'self'", "data:", "https:", "https://web-static.razorpay.com"],
+        connectSrc: [
+            "'self'", 
+            "https://e-comm-onecart-backend.onrender.com", 
+            "https://e-comm-onecart.onrender.com",
+            "https://lumberjack-cx.razorpay.com"
+        ],
+        frameSrc: ["'self'", "https://api.razorpay.com", "https://tds.razorpay.com"],
       },
     },
-    crossOriginResourcePolicy: { policy: "cross-origin" } // Allows images to load across domains
+    crossOriginResourcePolicy: { policy: "cross-origin" } 
   })
 );
 
@@ -68,7 +74,7 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
-app.options('*', cors(corsOptions)); // Explicitly handle preflight for all routes
+app.options('*', cors(corsOptions)); // Handle preflight for all routes
 
 // 4. MIDDLEWARES
 app.use(express.json());
@@ -91,7 +97,7 @@ app.get('/admin/*', (req, res) => {
   res.sendFile(path.join(__dirname, '../admin/dist', 'index.html'));
 });
 
-// Serve Frontend (Main Website)
+// Serve Frontend
 app.use(express.static(path.join(__dirname, '../frontend/dist')));
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, '../frontend/dist', 'index.html'));
