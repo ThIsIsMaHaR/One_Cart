@@ -1,5 +1,4 @@
 import express from 'express';
-import cors from 'cors';
 import 'dotenv/config';
 import cookieParser from 'cookie-parser';
 import path from 'path';
@@ -19,10 +18,10 @@ const port = process.env.PORT || 10000;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// 1. CONNECT DATABASE
+// 1. Database Connection
 connectDB();
 
-// 2. FORCE MANUAL CORS (MUST BE ABOVE EVERYTHING ELSE)
+// 2. MANUAL CORS HANDLER (MUST BE FIRST)
 app.use((req, res, next) => {
     const origin = req.headers.origin;
     const allowedOrigins = [
@@ -38,16 +37,16 @@ app.use((req, res, next) => {
     res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
     res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization, token, adminToken");
 
-    // Handle Browser "Preflight" test
+    // Handle Preflight OPTIONS request
     if (req.method === "OPTIONS") {
         return res.status(200).end();
     }
     next();
 });
 
-// 3. RELAXED SECURITY FOR RAZORPAY
+// 3. RELAXED HELMET (Ensures no Razorpay or internal blocks)
 app.use(helmet({
-    contentSecurityPolicy: false, 
+    contentSecurityPolicy: false,
     crossOriginResourcePolicy: { policy: "cross-origin" } 
 }));
 
@@ -63,9 +62,15 @@ app.use('/api/product', productRouter);
 app.use('/api/cart', cartRouter);
 app.use('/api/order', orderRouter);
 
-// 6. FRONTEND SERVING
+// 6. SERVING FRONTEND
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use(express.static(path.join(__dirname, '../frontend/dist')));
 app.get('*', (req, res) => res.sendFile(path.join(__dirname, '../frontend/dist', 'index.html')));
+
+// 7. GLOBAL ERROR HANDLER (This prevents CORS errors during crashes)
+app.use((err, req, res, next) => {
+    console.error("SERVER CRASH:", err.stack);
+    res.status(500).json({ success: false, message: "Internal Server Error" });
+});
 
 app.listen(port, () => console.log(`🚀 Server running on port ${port}`));
