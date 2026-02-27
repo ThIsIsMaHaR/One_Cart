@@ -20,28 +20,30 @@ function Registration() {
     let navigate = useNavigate()
 
     const handleSignup = async (e) => {
-        setLoading(true)
         e.preventDefault()
+        setLoading(true)
+        
         try {
-            // This sends data to YOUR Node.js server
-            const result = await axios.post(serverUrl + '/api/auth/registration', {
-                name, email, password
-            }, { withCredentials: true })
+            // Clean URL and explicit credentials
+            const cleanUrl = serverUrl.replace(/\/$/, ""); 
+            const { data } = await axios.post(`${cleanUrl}/api/auth/registration`, 
+                { name, email, password }, 
+                { withCredentials: true }
+            )
 
-            console.log(result.data)
-            getCurrentUser()
-            setLoading(false)
-            navigate("/")
-            toast.success("User Registration Successful")
-
+            if (data.success) {
+                toast.success("User Registration Successful")
+                await getCurrentUser()
+                navigate("/")
+            }
         } catch (error) {
+            console.error("Signup Error Details:", error.response?.data || error.message);
+            const errorMsg = error.response?.data?.message || "User Registration Failed";
+            toast.error(errorMsg);
+        } finally {
             setLoading(false)
-            console.log(error)
-            toast.error("User Registration Failed")
         }
     }
-
-    // Removed googleSignup function to eliminate Firebase errors
 
     return (
         <div className='w-[100vw] h-[100vh] bg-gradient-to-l from-[#141414] to-[#0c2025] text-[white] flex flex-col items-center justify-start'>
@@ -55,14 +57,11 @@ function Registration() {
                 <span className='text-[16px]'>Welcome to OneCart, Place your order</span>
             </div>
 
-            <div className='max-w-[600px] w-[90%] h-[500px] bg-[#00000025] border-[1px] border-[#96969635] backdrop:blur-2xl rounded-lg shadow-lg flex items-center justify-center '>
-                <form action="" onSubmit={handleSignup} className='w-[90%] h-[90%] flex flex-col items-center justify-start gap-[20px]'>
-                    
-                    {/* Removed Google Registration button to stop Firebase crashes */}
-                    
+            <div className='max-w-[600px] w-[90%] h-[500px] bg-[#00000025] border-[1px] border-[#96969635] backdrop-blur-2xl rounded-lg shadow-lg flex items-center justify-center '>
+                <form onSubmit={handleSignup} className='w-[90%] h-[90%] flex flex-col items-center justify-start gap-[20px]'>
                     <div className='w-[90%] flex flex-col items-center justify-center gap-[15px] relative mt-10'>
                         <input type="text" className='w-[100%] h-[50px] border-[2px] border-[#96969635] bg-transparent rounded-lg px-[20px]' placeholder='UserName' required onChange={(e) => setName(e.target.value)} value={name} />
-                        <input type="text" className='w-[100%] h-[50px] border-[2px] border-[#96969635] bg-transparent rounded-lg px-[20px]' placeholder='Email' required onChange={(e) => setEmail(e.target.value)} value={email} />
+                        <input type="email" className='w-[100%] h-[50px] border-[2px] border-[#96969635] bg-transparent rounded-lg px-[20px]' placeholder='Email' required onChange={(e) => setEmail(e.target.value)} value={email} />
                         
                         <div className="w-full relative">
                             <input type={show ? "text" : "password"} className='w-[100%] h-[50px] border-[2px] border-[#96969635] bg-transparent rounded-lg px-[20px]' placeholder='Password' required onChange={(e) => setPassword(e.target.value)} value={password} />
@@ -72,7 +71,7 @@ function Registration() {
                             }
                         </div>
 
-                        <button className='w-[100%] h-[50px] bg-[#6060f5] rounded-lg mt-[20px] font-semibold'>
+                        <button type="submit" className='w-[100%] h-[50px] bg-[#6060f5] rounded-lg mt-[20px] font-semibold flex items-center justify-center'>
                             {loading ? <Loading /> : "Create Account"}
                         </button>
                         <p className='flex gap-[10px]'>You have any account? <span className='text-[#5555f6cf] cursor-pointer' onClick={() => navigate("/login")}>Login</span></p>

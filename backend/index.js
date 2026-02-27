@@ -30,13 +30,11 @@ if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir);
 }
 
-// 3. MANUAL CORS & PREFLIGHT HANDLER (CRITICAL: MUST BE FIRST)
-// This satisfies the browser BEFORE any other middleware like Helmet or Auth
+// 3. MANUAL CORS & PREFLIGHT HANDLER (MUST BE FIRST)
 app.use((req, res, next) => {
     const allowedOrigins = [
         "https://e-comm-onecart.onrender.com", 
-        "http://localhost:5173", 
-        "http://localhost:5174"
+        "http://localhost:5173"
     ];
     const origin = req.headers.origin;
 
@@ -48,14 +46,14 @@ app.use((req, res, next) => {
     res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
     res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization, token, adminToken");
 
-    // Handle Preflight security check
+    // Immediately respond to browser security checks
     if (req.method === "OPTIONS") {
         return res.status(200).end();
     }
     next();
 });
 
-// 4. SECURITY (HELMET) - Configured for Google Fonts & Razorpay
+// 4. SECURITY (HELMET)
 app.use(
   helmet({
     contentSecurityPolicy: {
@@ -65,12 +63,7 @@ app.use(
         styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
         fontSrc: ["'self'", "https://fonts.gstatic.com"],
         imgSrc: ["'self'", "data:", "https:", "https://web-static.razorpay.com"],
-        connectSrc: [
-            "'self'", 
-            "https://e-comm-onecart-backend.onrender.com", 
-            "https://e-comm-onecart.onrender.com",
-            "https://lumberjack-cx.razorpay.com"
-        ],
+        connectSrc: ["'self'", "https://e-comm-onecart-backend.onrender.com", "https://e-comm-onecart.onrender.com"],
         frameSrc: ["'self'", "https://api.razorpay.com", "https://tds.razorpay.com"],
       },
     },
@@ -92,30 +85,16 @@ app.use('/api/order', orderRouter);
 
 // 7. STATIC FILE SERVING
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-
-// Serve Admin Panel
 app.use('/admin', express.static(path.join(__dirname, '../admin/dist')));
-app.get('/admin/*', (req, res) => {
-  res.sendFile(path.join(__dirname, '../admin/dist', 'index.html'));
-});
+app.get('/admin/*', (req, res) => res.sendFile(path.join(__dirname, '../admin/dist', 'index.html')));
 
-// Serve Frontend (Main Site)
 app.use(express.static(path.join(__dirname, '../frontend/dist')));
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, '../frontend/dist', 'index.html'));
-});
+app.get('*', (req, res) => res.sendFile(path.join(__dirname, '../frontend/dist', 'index.html')));
 
 // 8. GLOBAL ERROR HANDLER
 app.use((err, req, res, next) => {
-  console.error("Global Error Logged:", err.message);
-  res.status(500).json({ 
-    success: false, 
-    message: "Internal Server Error", 
-    error: err.message 
-  });
+  console.error("CRITICAL SERVER ERROR:", err.stack);
+  res.status(500).json({ success: false, message: "Internal Server Error" });
 });
 
-// 9. START SERVER
-app.listen(port, () => {
-  console.log(`🚀 Server running on port ${port}`);
-});
+app.listen(port, () => console.log(`🚀 Server running on port ${port}`));
