@@ -1,61 +1,35 @@
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react'
-import { authDataContext } from './AuthContext'
-import axios from 'axios'
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import { authDataContext } from './AuthContext'; // Matches the export above
+import axios from 'axios';
 
-export const userDataContext = createContext()
+export const UserContext = createContext();
 
-function UserContext({ children }) {
-    const [userData, setUserData] = useState(null)
-    const [loading, setLoading] = useState(true) 
-    const { serverUrl } = useContext(authDataContext)
+export const UserContextProvider = ({ children }) => {
+    // We consume the auth context here
+    const { token, backendUrl } = useContext(authDataContext);
+    const [user, setUser] = useState(null);
 
-    const getCurrentUser = useCallback(async () => {
-        if (!serverUrl) return;
-
+    const fetchUserProfile = useCallback(async () => {
+        if (!token) return;
         try {
-            setLoading(true)
-            // FIXED: Added withCredentials and ensured clean URL
-            const baseUrl = serverUrl.endsWith('/') ? serverUrl.slice(0, -1) : serverUrl;
-            
-            const { data } = await axios.get(`${baseUrl}/api/user/getcurrentuser`, {
-                withCredentials: true
-            })
-            
-            if (data.success) {
-                setUserData(data.user)
-            } else {
-                setUserData(null)
+            const response = await axios.get(`${backendUrl}/api/user/profile`, {
+                headers: { token }
+            });
+            if (response.data.success) {
+                setUser(response.data.user);
             }
         } catch (error) {
-            setUserData(null)
-            if (error.response?.status !== 401) {
-                console.error("User Profile Fetch Error:", error.response?.data?.message || error.message)
-            }
-        } finally {
-            setLoading(false)
+            console.error("Error fetching profile:", error);
         }
-    }, [serverUrl])
+    }, [token, backendUrl]);
 
     useEffect(() => {
-        if (serverUrl) {
-            getCurrentUser()
-        } else {
-            setLoading(false)
-        }
-    }, [serverUrl, getCurrentUser])
-
-    const value = {
-        userData,
-        setUserData,
-        getCurrentUser,
-        loading 
-    }
+        fetchUserProfile();
+    }, [fetchUserProfile]);
 
     return (
-        <userDataContext.Provider value={value}>
+        <UserContext.Provider value={{ user, setUser, fetchUserProfile }}>
             {children}
-        </userDataContext.Provider>
-    )
-}
-
-export default UserContext
+        </UserContext.Provider>
+    );
+};
