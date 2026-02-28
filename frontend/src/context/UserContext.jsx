@@ -1,11 +1,11 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
-import { authDataContext } from './AuthContext'; // Matches the export above
+import { authDataContext } from './AuthContext';
 import axios from 'axios';
 
-export const UserContext = createContext();
+// Changed 'UserContext' to 'userDataContext' to match your Registration.jsx import
+export const userDataContext = createContext();
 
 export const UserContextProvider = ({ children }) => {
-    // We consume the auth context here
     const { token, backendUrl } = useContext(authDataContext);
     const [user, setUser] = useState(null);
 
@@ -28,8 +28,8 @@ export const UserContextProvider = ({ children }) => {
     }, [fetchUserProfile]);
 
     return (
-        <UserContext.Provider value={{ user, setUser, fetchUserProfile }}>
+        <userDataContext.Provider value={{ user, setUser, fetchUserProfile }}>
             {children}
-        </UserContext.Provider>
+        </userDataContext.Provider>
     );
 };
