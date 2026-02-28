@@ -3,7 +3,7 @@ import 'dotenv/config';
 import cookieParser from 'cookie-parser';
 import path from 'path';
 import helmet from 'helmet';
-import cors from 'cors'; // Added official cors package
+import cors from 'cors'; // Ensure you've run: npm install cors
 import { fileURLToPath } from 'url';
 import connectDB from './config/db.js';
 
@@ -22,19 +22,20 @@ const __dirname = path.dirname(__filename);
 // 1. Database Connection
 connectDB();
 
-// 2. MODERN CORS CONFIGURATION
+// 2. ROBUST CORS CONFIGURATION
 const allowedOrigins = [
     "https://e-comm-onecart.onrender.com",
+    "https://e-comm-onecart.onrender.com/", // With trailing slash
     "http://localhost:5173"
 ];
 
 app.use(cors({
-    origin: function (origin, callback) {
-        // Allow requests with no origin (like mobile apps or curl requests)
-        if (!origin) return callback(null, true);
-        if (allowedOrigins.indexOf(origin) !== -1) {
+    origin: (origin, callback) => {
+        // Allow requests with no origin (like mobile apps, Postman, or server-to-server)
+        if (!origin || allowedOrigins.includes(origin)) {
             callback(null, true);
         } else {
+            console.error(`CORS blocked for origin: ${origin}`);
             callback(new Error('Not allowed by CORS'));
         }
     },
@@ -45,15 +46,15 @@ app.use(cors({
 
 // 3. ESSENTIAL MIDDLEWARES
 app.use(helmet({ 
-    contentSecurityPolicy: false, // Required to allow React to run smoothly
-    crossOriginResourcePolicy: { policy: "cross-origin" } // Helps with loading images from different origins
+    contentSecurityPolicy: false, // Allows React to run without CSP blocks
+    crossOriginResourcePolicy: { policy: "cross-origin" } // Allows images to load across domains
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-// 4. API ROUTES
-app.get('/api/health', (req, res) => res.json({ status: "ok", message: "Backend is reachable!" }));
+// 4. API ROUTES (Must be above static serving)
+app.get('/api/health', (req, res) => res.json({ status: "ok", message: "OneCart Backend is alive!" }));
 
 app.use('/api/auth', authRouter);
 app.use('/api/user', userRouter);
@@ -61,18 +62,21 @@ app.use('/api/product', productRouter);
 app.use('/api/cart', cartRouter);
 app.use('/api/order', orderRouter);
 
-// 5. STATIC FILES & SERVING FRONTEND
+// 5. STATIC FILES & FRONTEND SERVING
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Serve frontend dist folder
+// Serve the production build of the React app
 const distPath = path.join(__dirname, '../frontend/dist');
 app.use(express.static(distPath));
 
-// The Catch-All for React Router (Must be at the very bottom)
+// The Catch-All for React Router (MUST be the last route)
 app.get('*', (req, res) => {
-    // Check if the file exists before sending to avoid infinite loops
-    const indexPath = path.join(distPath, 'index.html');
-    res.sendFile(indexPath);
+    res.sendFile(path.join(distPath, 'index.html'), (err) => {
+        if (err) {
+            // If the frontend isn't built yet, don't crash the server
+            res.status(500).send("Frontend build not found. Run 'npm run build' in the frontend folder.");
+        }
+    });
 });
 
 // 6. GLOBAL ERROR HANDLER
@@ -84,4 +88,7 @@ app.use((err, req, res, next) => {
     });
 });
 
-app.listen(port, () => console.log(`🚀 Server running on port ${port} in ${process.env.NODE_ENV || 'development'} mode`));
+app.listen(port, () => {
+    console.log(`🚀 OneCart Server running on port ${port}`);
+    console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+});
