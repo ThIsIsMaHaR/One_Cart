@@ -1,18 +1,15 @@
 import React, { createContext, useState } from "react";
 
-// The Context itself
-export const ShopContext = createContext();
+// 1. Export the context as 'shopDataContext' to match Card.jsx
+export const shopDataContext = createContext();
 
-// The Provider (This is what main.jsx is looking for)
+// 2. Export the provider as 'ShopContextProvider' to match main.jsx
 export const ShopContextProvider = (props) => {
-
     const currency = '₹';
     const delivery_fee = 50;
     const [search, setSearch] = useState('');
     const [showSearch, setShowSearch] = useState(false);
     const [cartItems, setCartItems] = useState({});
-
-    // Add any other shop logic you have here...
 
     const value = {
         currency, 
@@ -23,8 +20,8 @@ export const ShopContextProvider = (props) => {
     };
 
     return (
-        <ShopContext.Provider value={value}>
+        <shopDataContext.Provider value={value}>
             {props.children}
-        </ShopContext.Provider>
+        </shopDataContext.Provider>
     );
 };
