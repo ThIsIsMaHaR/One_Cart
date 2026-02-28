@@ -19,7 +19,7 @@ const port = process.env.PORT || 10000;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// 1. Database Connection
+// 1. Database Connection (Non-blocking so CORS can still respond if DB is slow)
 connectDB().catch(err => console.error("🛑 MongoDB Connection Error:", err));
 
 // 2. BULLETPROOF CORS CONFIGURATION
@@ -33,18 +33,19 @@ app.use(cors({
     origin: function (origin, callback) {
         // Allow requests with no origin (like mobile apps or curl)
         if (!origin) return callback(null, true);
-        if (allowedOrigins.indexOf(origin) === -1) {
+        if (allowedOrigins.indexOf(origin) !== -1 || origin.includes('onrender.com')) {
+            return callback(null, true);
+        } else {
             return callback(new Error('CORS Policy: Origin not allowed'), false);
         }
-        return callback(null, true);
     },
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "token", "adminToken"],
-    optionsSuccessStatus: 200 // Some legacy browsers choke on 204
+    optionsSuccessStatus: 200 
 }));
 
-// Handle Preflight requests globally
+// Explicitly handle Preflight requests for all routes
 app.options('*', cors());
 
 // 3. UPDATED HELMET FOR RAZORPAY & CSP
