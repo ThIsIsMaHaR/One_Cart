@@ -8,6 +8,11 @@
   "start": "node backend/index.js",
   "build": "npm install && cd frontend && npm install && npm run build && cd ../admin && npm install --include=dev && npm run build"
 },
+
+"engines": {
+  "node": "18.x"
+},
+
   "dependencies": {
     "bcryptjs": "^2.4.3",
     "cloudinary": "^2.5.1",
