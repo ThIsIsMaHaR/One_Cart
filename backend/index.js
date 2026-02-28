@@ -19,61 +19,80 @@ const port = process.env.PORT || 10000;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// 1. Connect to Database
-connectDB().catch(err => console.error("🛑 MongoDB Connection Error:", err));
+// 1. Database Connection
+connectDB();
 
-// 2. CORS - Aggressive configuration for Monolith
-const allowedOrigins = [
-    "https://e-comm-onecart.onrender.com",
-    "https://e-comm-onecart-backend.onrender.com",
-    "http://localhost:5173"
-];
-
+// 2. CORS CONFIGURATION
+// Use 'origin: true' to dynamically allow the requesting origin (very robust for production)
 app.use(cors({
-    origin: function (origin, callback) {
-        if (!origin || allowedOrigins.indexOf(origin) !== -1 || origin.includes('onrender.com')) {
-            callback(null, true);
-        } else {
-            callback(new Error('CORS Policy Blocked this Origin'));
-        }
-    },
+    origin: ["https://e-comm-onecart.onrender.com", "http://localhost:5173"],
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization", "token", "adminToken"],
+    allowedHeaders: ["Origin", "X-Requested-With", "Content-Type", "Accept", "Authorization", "token", "adminToken"],
     optionsSuccessStatus: 200 
 }));
 
-// Manually handle the "Preflight" for all routes
-app.options('*', cors());
-
-// 3. HELMET (Disabled CSP to ensure joint deployment loads correctly)
-app.use(helmet({
+// 3. MIDDLEWARES
+app.use(helmet({ 
     contentSecurityPolicy: false, 
-    crossOriginResourcePolicy: { policy: "cross-origin" }
+    crossOriginResourcePolicy: { policy: "cross-origin" } 
 }));
-
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-// 4. API ROUTES (Must stay ABOVE static files)
+// 4. API ROUTES (Must be defined BEFORE static files to avoid 404s)
+app.get('/api/health', (req, res) => {
+    res.status(200).json({ success: true, message: "OneCart Backend is Live!" });
+});
+
 app.use('/api/auth', authRouter);
 app.use('/api/user', userRouter);
 app.use('/api/product', productRouter);
 app.use('/api/cart', cartRouter);
 app.use('/api/order', orderRouter);
 
-// 5. SERVE FRONTEND STATIC FILES
+// 5. STATIC FILES & MULTI-FRONTEND SERVING
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// Serve Frontend (Main Shop)
 const frontendDist = path.join(__dirname, '../frontend/dist');
 app.use(express.static(frontendDist));
 
-// 6. CATCH-ALL (For React Router support)
+// Serve Admin Panel (if you access it via /admin)
+const adminDist = path.join(__dirname, '../admin/dist');
+app.use('/admin', express.static(adminDist));
+
+// 6. THE CATCH-ALL ROUTE (For React Router support)
 app.get('*', (req, res) => {
+    // If it's an API call that wasn't found, don't serve the HTML file
     if (req.url.startsWith('/api')) {
-        return res.status(404).json({ message: "API endpoint not found" });
+        return res.status(404).json({ success: false, message: "API endpoint not found" });
     }
-    res.sendFile(path.join(frontendDist, 'index.html'));
+    
+    // Check if the request is for the admin path
+    if (req.url.startsWith('/admin')) {
+        return res.sendFile(path.join(adminDist, 'index.html'));
+    }
+
+    // Default to serving the main frontend
+    res.sendFile(path.join(frontendDist, 'index.html'), (err) => {
+        if (err) {
+            res.status(500).send("Frontend build not found. Please run 'npm run build'.");
+        }
+    });
 });
 
+// 7. GLOBAL ERROR HANDLER
+app.use((err, req, res, next) => {
+    console.error("❌ SERVER ERROR:", err.message);
+    res.status(err.status || 500).json({ 
+        success: false, 
+        message: err.message || "Internal Server Error" 
+    });
+});
+
+// Listen on 0.0.0.0 for Render compatibility
 app.listen(port, '0.0.0.0', () => {
-    console.log(`🚀 Monolith Server running on port ${port}`);
+    console.log(`🚀 OneCart Server running on port ${port}`);
 });
