@@ -3,6 +3,7 @@ import 'dotenv/config';
 import cookieParser from 'cookie-parser';
 import path from 'path';
 import helmet from 'helmet';
+import cors from 'cors'; // Added official cors package
 import { fileURLToPath } from 'url';
 import connectDB from './config/db.js';
 
@@ -21,36 +22,37 @@ const __dirname = path.dirname(__filename);
 // 1. Database Connection
 connectDB();
 
-// 2. MANUAL CORS HANDLER (MUST BE FIRST)
-app.use((req, res, next) => {
-    const origin = req.headers.origin;
-    const allowedOrigins = [
-        "https://e-comm-onecart.onrender.com",
-        "http://localhost:5173"
-    ];
+// 2. MODERN CORS CONFIGURATION
+const allowedOrigins = [
+    "https://e-comm-onecart.onrender.com",
+    "http://localhost:5173"
+];
 
-    if (allowedOrigins.includes(origin)) {
-        res.header("Access-Control-Allow-Origin", origin);
-    }
-    
-    res.header("Access-Control-Allow-Credentials", "true");
-    res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization, token, adminToken");
-
-    if (req.method === "OPTIONS") {
-        return res.status(200).end();
-    }
-    next();
-});
+app.use(cors({
+    origin: function (origin, callback) {
+        // Allow requests with no origin (like mobile apps or curl requests)
+        if (!origin) return callback(null, true);
+        if (allowedOrigins.indexOf(origin) !== -1) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Origin", "X-Requested-With", "Content-Type", "Accept", "Authorization", "token", "adminToken"]
+}));
 
 // 3. ESSENTIAL MIDDLEWARES
-app.use(helmet({ contentSecurityPolicy: false }));
+app.use(helmet({ 
+    contentSecurityPolicy: false, // Required to allow React to run smoothly
+    crossOriginResourcePolicy: { policy: "cross-origin" } // Helps with loading images from different origins
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-// 4. API ROUTES (MUST BE ABOVE STATIC SERVING)
-// Health check route - use this to verify the backend is alive
+// 4. API ROUTES
 app.get('/api/health', (req, res) => res.json({ status: "ok", message: "Backend is reachable!" }));
 
 app.use('/api/auth', authRouter);
@@ -59,19 +61,27 @@ app.use('/api/product', productRouter);
 app.use('/api/cart', cartRouter);
 app.use('/api/order', orderRouter);
 
-// 5. SERVING FRONTEND (MUST BE AFTER API ROUTES)
+// 5. STATIC FILES & SERVING FRONTEND
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-app.use(express.static(path.join(__dirname, '../frontend/dist')));
 
-// The Catch-All for React Router - THIS MUST BE LAST
+// Serve frontend dist folder
+const distPath = path.join(__dirname, '../frontend/dist');
+app.use(express.static(distPath));
+
+// The Catch-All for React Router (Must be at the very bottom)
 app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, '../frontend/dist', 'index.html'));
+    // Check if the file exists before sending to avoid infinite loops
+    const indexPath = path.join(distPath, 'index.html');
+    res.sendFile(indexPath);
 });
 
 // 6. GLOBAL ERROR HANDLER
 app.use((err, req, res, next) => {
-    console.error("SERVER ERROR:", err.stack);
-    res.status(500).json({ success: false, message: "Internal Server Error" });
+    console.error("❌ SERVER ERROR:", err.message);
+    res.status(err.status || 500).json({ 
+        success: false, 
+        message: err.message || "Internal Server Error" 
+    });
 });
 
-app.listen(port, () => console.log(`🚀 Server running on port ${port}`));
+app.listen(port, () => console.log(`🚀 Server running on port ${port} in ${process.env.NODE_ENV || 'development'} mode`));

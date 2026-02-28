@@ -9,80 +9,132 @@ import { toast } from 'react-toastify';
 import Loading from '../component/Loading';
 
 function Registration() {
-    let [show, setShow] = useState(false)
-    let { serverUrl } = useContext(authDataContext)
-    let [name, setName] = useState("")
-    let [email, setEmail] = useState("")
-    let [password, setPassword] = useState("")
-    let { getCurrentUser } = useContext(userDataContext)
-    let [loading, setLoading] = useState(false)
+    const [show, setShow] = useState(false)
+    const [name, setName] = useState("")
+    const [email, setEmail] = useState("")
+    const [password, setPassword] = useState("")
+    const [loading, setLoading] = useState(false)
 
-    let navigate = useNavigate()
+    const { serverUrl } = useContext(authDataContext)
+    const { getCurrentUser } = useContext(userDataContext)
+    const navigate = useNavigate()
 
     const handleSignup = async (e) => {
         e.preventDefault()
         setLoading(true)
         
         try {
-            // Ensure URL doesn't have double slashes
+            // Normalize URL and Data
             const baseUrl = serverUrl.endsWith('/') ? serverUrl.slice(0, -1) : serverUrl;
+            const payload = { 
+                name: name.trim(), 
+                email: email.trim().toLowerCase(), 
+                password 
+            };
 
             const response = await axios.post(`${baseUrl}/api/auth/registration`, 
-                { name, email, password }, 
+                payload, 
                 { 
                     withCredentials: true,
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
+                    headers: { 'Content-Type': 'application/json' }
                 }
             )
 
             if (response.data.success) {
                 toast.success("User Registration Successful")
-                // Adding a tiny delay to allow the cookie to be set by the browser
-                setTimeout(async () => {
-                    await getCurrentUser()
-                    navigate("/")
-                }, 500);
+                
+                // Fetch the user data (this relies on the cookie sent by the registration response)
+                await getCurrentUser()
+                
+                // Navigate to home
+                navigate("/")
             }
         } catch (error) {
             console.error("Signup Error Details:", error.response?.data || error.message);
-            const errorMsg = error.response?.data?.message || "User Registration Failed";
-            toast.error(errorMsg);
+            
+            // Check if server is reachable (important for Render spin-up)
+            if (!error.response) {
+                toast.error("Server is not responding. Please wait a moment.");
+            } else {
+                const errorMsg = error.response.data.message || "User Registration Failed";
+                toast.error(errorMsg);
+            }
         } finally {
             setLoading(false)
         }
     }
 
     return (
-        <div className='w-[100vw] h-[100vh] bg-gradient-to-l from-[#141414] to-[#0c2025] text-[white] flex flex-col items-center justify-start'>
-            <div className='w-[100%] h-[80px] flex items-center justify-start px-[30px] gap-[10px] cursor-pointer' onClick={() => navigate("/")}>
-                <img className='w-[40px]' src={Logo} alt="OneCart" />
+        <div className='w-screen h-screen bg-linear-to-l from-[#141414] to-[#0c2025] text-[white] flex flex-col items-center justify-start overflow-x-hidden'>
+            {/* Logo Section */}
+            <div className='w-full h-20 flex items-center justify-start px-7.5 gap-2.5 cursor-pointer' onClick={() => navigate("/")}>
+                <img className='w-10' src={Logo} alt="OneCart" />
                 <h1 className='text-[22px] font-sans '>OneCart</h1>
             </div>
 
-            <div className='w-[100%] h-[100px] flex items-center justify-center flex-col gap-[10px]'>
+            {/* Title Section */}
+            <div className='w-full h-2.5 flex items-center justify-center flex-col gap-2.5'>
                 <span className='text-[25px] font-semibold'>Registration Page</span>
-                <span className='text-[16px]'>Welcome to OneCart, Place your order</span>
+                <span className='text-[16px] text-gray-400'>Join OneCart and start shopping today</span>
             </div>
 
-            <div className='max-w-[600px] w-[90%] h-[500px] bg-[#00000025] border-[1px] border-[#96969635] backdrop-blur-2xl rounded-lg shadow-lg flex items-center justify-center '>
-                <form onSubmit={handleSignup} className='w-[90%] h-[90%] flex flex-col items-center justify-start gap-[20px]'>
-                    <div className='w-[90%] flex flex-col items-center justify-center gap-[15px] relative mt-10'>
-                        <input type="text" className='w-[100%] h-[50px] border-[2px] border-[#96969635] bg-transparent rounded-lg px-[20px] outline-none focus:border-[#6060f5]' placeholder='UserName' required onChange={(e) => setName(e.target.value)} value={name} />
-                        <input type="email" className='w-[100%] h-[50px] border-[2px] border-[#96969635] bg-transparent rounded-lg px-[20px] outline-none focus:border-[#6060f5]' placeholder='Email' required onChange={(e) => setEmail(e.target.value)} value={email} />
+            {/* Registration Card */}
+            <div className='max-w-150 w-[90%] min-h-130 bg-[#00000025] border border-[#96969635] backdrop-blur-2xl rounded-lg shadow-lg flex items-center justify-center py-8'>
+                <form onSubmit={handleSignup} className='w-[90%] flex flex-col items-center justify-start gap-5'>
+                    <div className='w-[90%] flex flex-col items-center justify-center gap-3.75'>
+                        
+                        <input 
+                            type="text" 
+                            className='w-full h-12.5 border-2 border-[#96969635] bg-transparent rounded-lg px-5 outline-none focus:border-[#6060f5] placeholder-gray-500' 
+                            placeholder='Full Name' 
+                            required 
+                            onChange={(e) => setName(e.target.value)} 
+                            value={name} 
+                        />
+                        
+                        <input 
+                            type="email" 
+                            className='w-full h-12.5 border-2 border-[#96969635] bg-transparent rounded-lg px-5 outline-none focus:border-[#6060f5] placeholder-gray-500' 
+                            placeholder='Email Address' 
+                            required 
+                            onChange={(e) => setEmail(e.target.value)} 
+                            value={email} 
+                        />
                         
                         <div className="w-full relative">
-                            <input type={show ? "text" : "password"} className='w-[100%] h-[50px] border-[2px] border-[#96969635] bg-transparent rounded-lg px-[20px] outline-none focus:border-[#6060f5]' placeholder='Password' required onChange={(e) => setPassword(e.target.value)} value={password} />
-                            <div className='absolute right-4 top-4 cursor-pointer text-xl' onClick={() => setShow(!show)}>
+                            <input 
+                                type={show ? "text" : "password"} 
+                                className='w-full h-12.5 border-2 border-[#96969635] bg-transparent rounded-lg px-5 outline-none focus:border-[#6060f5] placeholder-gray-500' 
+                                placeholder='Password (Min. 8 characters)' 
+                                required 
+                                onChange={(e) => setPassword(e.target.value)} 
+                                value={password} 
+                            />
+                            <div 
+                                className='absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer text-xl text-gray-400 hover:text-white transition-colors' 
+                                onClick={() => setShow(!show)}
+                            >
                                 {show ? <IoEye /> : <IoEyeOutline />}
                             </div>
                         </div>
 
-                        <button type="submit" disabled={loading} className='w-[100%] h-[50px] bg-[#6060f5] hover:bg-[#4e4ef0] rounded-lg mt-[20px] font-semibold flex items-center justify-center transition-all'>
+                        <button 
+                            type="submit" 
+                            disabled={loading} 
+                            className='w-full h-[50px] bg-[#6060f5] hover:bg-[#4e4ef0] disabled:bg-gray-600 rounded-lg mt-[20px] font-semibold flex items-center justify-center transition-all'
+                        >
                             {loading ? <Loading /> : "Create Account"}
                         </button>
-                        <p className='flex gap-[10px]'>Already have an account? <span className='text-[#5555f6cf] cursor-pointer hover:underline' onClick={() => navigate("/login")}>Login</span></p>
+
+                        <p className='flex gap-[10px] text-sm mt-2'>
+                            Already have an account? 
+                            <span 
+                                className='text-[#5555f6cf] font-bold cursor-pointer hover:underline' 
+                                onClick={() => navigate("/login")}
+                            >
+                                Login
+                            </span>
+                        </p>
                     </div>
                 </form>
             </div>

@@ -4,78 +4,98 @@ import { useNavigate } from 'react-router-dom'
 import { IoEyeOutline, IoEye } from "react-icons/io5";
 import { authDataContext } from '../context/AuthContext';
 import { userDataContext } from '../context/UserContext';
-import axios from 'axios';
-import Loading from '../component/Loading';
+import axios from 'axios'
 import { toast } from 'react-toastify';
+import Loading from '../component/Loading';
 
-function Login() {
-    let [show, setShow] = useState(false)
-    let [email, setEmail] = useState("")
-    let [password, setPassword] = useState("")
-    let { serverUrl } = useContext(authDataContext)
-    let { getCurrentUser } = useContext(userDataContext)
-    let [loading, setLoading] = useState(false)
+function Registration() {
+    const [show, setShow] = useState(false)
+    const [name, setName] = useState("")
+    const [email, setEmail] = useState("")
+    const [password, setPassword] = useState("")
+    const [loading, setLoading] = useState(false)
 
-    let navigate = useNavigate()
+    const { serverUrl } = useContext(authDataContext)
+    const { getCurrentUser } = useContext(userDataContext)
+    const navigate = useNavigate()
 
-    const handleLogin = async (e) => {
+    const handleSignup = async (e) => {
         e.preventDefault()
         setLoading(true)
         
         try {
-            // hitting the backend with correct credentials
-            const result = await axios.post(`${serverUrl}/api/auth/login`, {
-                email: email.trim(), // Trim to prevent accidental spaces
-                password
-            }, { 
-                withCredentials: true,
-                headers: { 'Content-Type': 'application/json' }
-            })
+            // Normalize URL and Data
+            const baseUrl = serverUrl.endsWith('/') ? serverUrl.slice(0, -1) : serverUrl;
+            const payload = { 
+                name: name.trim(), 
+                email: email.trim().toLowerCase(), 
+                password 
+            };
 
-            if (result.data.success) {
-                console.log("Login Success:", result.data)
+            const response = await axios.post(`${baseUrl}/api/auth/registration`, 
+                payload, 
+                { 
+                    withCredentials: true,
+                    headers: { 'Content-Type': 'application/json' }
+                }
+            )
+
+            if (response.data.success) {
+                toast.success("User Registration Successful")
                 
-                // 1. Update the user state
-                await getCurrentUser() 
+                // Fetch the user data (this relies on the cookie sent by the registration response)
+                await getCurrentUser()
                 
-                // 2. Clear fields
-                setEmail("")
-                setPassword("")
-                
-                setLoading(false)
-                toast.success("User Login Successful")
+                // Navigate to home
                 navigate("/")
             }
-
         } catch (error) {
-            setLoading(false)
-            console.error("Login Error:", error)
+            console.error("Signup Error Details:", error.response?.data || error.message);
             
-            // Handle the specific CORS vs Auth error
-            const errorMsg = error.response?.data?.message || "Invalid Email or Password"
-            toast.error(errorMsg)
+            // Check if server is reachable (important for Render spin-up)
+            if (!error.response) {
+                toast.error("Server is not responding. Please wait a moment.");
+            } else {
+                const errorMsg = error.response.data.message || "User Registration Failed";
+                toast.error(errorMsg);
+            }
+        } finally {
+            setLoading(false)
         }
     }
 
     return (
-        <div className='w-[100vw] h-[100vh] bg-gradient-to-l from-[#141414] to-[#0c2025] text-[white] flex flex-col items-center justify-start'>
+        <div className='w-[100vw] h-[100vh] bg-gradient-to-l from-[#141414] to-[#0c2025] text-[white] flex flex-col items-center justify-start overflow-x-hidden'>
+            {/* Logo Section */}
             <div className='w-[100%] h-[80px] flex items-center justify-start px-[30px] gap-[10px] cursor-pointer' onClick={() => navigate("/")}>
-                <img className='w-[40px]' src={Logo} alt="OneCart Logo" />
+                <img className='w-[40px]' src={Logo} alt="OneCart" />
                 <h1 className='text-[22px] font-sans '>OneCart</h1>
             </div>
 
+            {/* Title Section */}
             <div className='w-[100%] h-[100px] flex items-center justify-center flex-col gap-[10px]'>
-                <span className='text-[25px] font-semibold'>Login Page</span>
-                <span className='text-[16px]'>Welcome to OneCart, Place your order</span>
+                <span className='text-[25px] font-semibold'>Registration Page</span>
+                <span className='text-[16px] text-gray-400'>Join OneCart and start shopping today</span>
             </div>
 
-            <div className='max-w-[600px] w-[90%] h-[400px] bg-[#00000025] border-[1px] border-[#96969635] backdrop-blur-2xl rounded-lg shadow-lg flex items-center justify-center '>
-                <form onSubmit={handleLogin} className='w-[90%] h-[90%] flex flex-col items-center justify-start gap-[20px]'>
-                    <div className='w-[90%] flex flex-col items-center justify-center gap-[15px] relative mt-10'>
+            {/* Registration Card */}
+            <div className='max-w-[600px] w-[90%] min-h-[520px] bg-[#00000025] border-[1px] border-[#96969635] backdrop-blur-2xl rounded-lg shadow-lg flex items-center justify-center py-8'>
+                <form onSubmit={handleSignup} className='w-[90%] flex flex-col items-center justify-start gap-[20px]'>
+                    <div className='w-[90%] flex flex-col items-center justify-center gap-[15px]'>
+                        
+                        <input 
+                            type="text" 
+                            className='w-[100%] h-[50px] border-[2px] border-[#96969635] bg-transparent rounded-lg px-[20px] outline-none focus:border-[#6060f5] placeholder-gray-500' 
+                            placeholder='Full Name' 
+                            required 
+                            onChange={(e) => setName(e.target.value)} 
+                            value={name} 
+                        />
+                        
                         <input 
                             type="email" 
-                            className='w-[100%] h-[50px] border-[2px] border-[#96969635] bg-transparent rounded-lg px-[20px] placeholder-[#ffffffc7] font-semibold outline-none focus:border-[#6060f5]' 
-                            placeholder='Email' 
+                            className='w-[100%] h-[50px] border-[2px] border-[#96969635] bg-transparent rounded-lg px-[20px] outline-none focus:border-[#6060f5] placeholder-gray-500' 
+                            placeholder='Email Address' 
                             required 
                             onChange={(e) => setEmail(e.target.value)} 
                             value={email} 
@@ -84,14 +104,14 @@ function Login() {
                         <div className="w-full relative">
                             <input 
                                 type={show ? "text" : "password"} 
-                                className='w-[100%] h-[50px] border-[2px] border-[#96969635] bg-transparent rounded-lg px-[20px] placeholder-[#ffffffc7] font-semibold outline-none focus:border-[#6060f5]' 
-                                placeholder='Password' 
+                                className='w-[100%] h-[50px] border-[2px] border-[#96969635] bg-transparent rounded-lg px-[20px] outline-none focus:border-[#6060f5] placeholder-gray-500' 
+                                placeholder='Password (Min. 8 characters)' 
                                 required 
                                 onChange={(e) => setPassword(e.target.value)} 
                                 value={password} 
                             />
                             <div 
-                                className="absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer text-xl text-[#969696]"
+                                className='absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer text-xl text-gray-400 hover:text-white transition-colors' 
                                 onClick={() => setShow(!show)}
                             >
                                 {show ? <IoEye /> : <IoEyeOutline />}
@@ -99,20 +119,20 @@ function Login() {
                         </div>
 
                         <button 
-                            type="submit"
-                            disabled={loading}
-                            className='w-[100%] h-[50px] bg-[#6060f5] hover:bg-[#4e4ef0] transition-colors rounded-lg mt-[10px] text-[17px] font-semibold flex items-center justify-center'
+                            type="submit" 
+                            disabled={loading} 
+                            className='w-[100%] h-[50px] bg-[#6060f5] hover:bg-[#4e4ef0] disabled:bg-gray-600 rounded-lg mt-[20px] font-semibold flex items-center justify-center transition-all'
                         >
-                            {loading ? <Loading /> : "Login"}
+                            {loading ? <Loading /> : "Create Account"}
                         </button>
-                        
-                        <p className='flex gap-[10px] mt-2 text-sm'>
-                            Don't have an account? 
+
+                        <p className='flex gap-[10px] text-sm mt-2'>
+                            Already have an account? 
                             <span 
-                                className='text-[#5555f6cf] font-semibold cursor-pointer hover:underline' 
-                                onClick={() => navigate("/signup")}
+                                className='text-[#5555f6cf] font-bold cursor-pointer hover:underline' 
+                                onClick={() => navigate("/login")}
                             >
-                                Create New Account
+                                Login
                             </span>
                         </p>
                     </div>
@@ -122,4 +142,4 @@ function Login() {
     )
 }
 
-export default Login
+export default Registration
