@@ -1,14 +1,9 @@
-import React, { createContext, useState, useEffect } from 'react';
-import axios from 'axios';
+import React, { createContext, useState } from 'react';
 
-// CRITICAL: This must be exported exactly as 'authDataContext'
 export const authDataContext = createContext();
 
 export const AuthContextProvider = ({ children }) => {
     const [token, setToken] = useState(localStorage.getItem('token') || null);
-    const [userData, setUserData] = useState(null);
-    
-    // Replace with your actual backend URL
     const backendUrl = "https://e-comm-onecart-backend.onrender.com";
 
     const login = (newToken) => {
@@ -22,7 +17,7 @@ export const AuthContextProvider = ({ children }) => {
     };
 
     return (
-        <authDataContext.Provider value={{ token, login, logout, backendUrl, userData, setUserData }}>
+        <authDataContext.Provider value={{ token, login, logout, backendUrl }}>
             {children}
         </authDataContext.Provider>
     );
