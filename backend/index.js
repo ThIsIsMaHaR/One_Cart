@@ -19,15 +19,35 @@ const port = process.env.PORT || 10000;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// 1. Database Connection
 connectDB().catch(err => console.error("🛑 MongoDB Connection Error:", err));
 
+// 2. BULLETPROOF CORS CONFIGURATION
+const allowedOrigins = [
+    "https://e-comm-onecart.onrender.com",
+    "https://e-comm-onecart-backend.onrender.com",
+    "http://localhost:5173"
+];
+
 app.use(cors({
-    origin: ["https://e-comm-onecart.onrender.com", "http://localhost:5173"],
+    origin: function (origin, callback) {
+        // Allow requests with no origin (like mobile apps or curl)
+        if (!origin) return callback(null, true);
+        if (allowedOrigins.indexOf(origin) === -1) {
+            return callback(new Error('CORS Policy: Origin not allowed'), false);
+        }
+        return callback(null, true);
+    },
     credentials: true,
-    optionsSuccessStatus: 200
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "token", "adminToken"],
+    optionsSuccessStatus: 200 // Some legacy browsers choke on 204
 }));
 
-// UPDATED HELMET FOR RAZORPAY
+// Handle Preflight requests globally
+app.options('*', cors());
+
+// 3. UPDATED HELMET FOR RAZORPAY & CSP
 app.use(helmet({
     contentSecurityPolicy: {
         directives: {
@@ -46,14 +66,14 @@ app.use(helmet({
 app.use(express.json());
 app.use(cookieParser());
 
-// API ROUTES
+// 4. API ROUTES
 app.use('/api/auth', authRouter);
 app.use('/api/user', userRouter);
 app.use('/api/product', productRouter);
 app.use('/api/cart', cartRouter);
 app.use('/api/order', orderRouter);
 
-// STATIC FILES
+// 5. STATIC FILES
 const frontendDist = path.join(__dirname, '../frontend/dist');
 app.use(express.static(frontendDist));
 
