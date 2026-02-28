@@ -1,38 +1,25 @@
 {
-  "name": "onecart",
+  "name": "one-cart",
   "version": "1.0.0",
-  "description": "Fullstack OneCart Deployment",
-  "main": "backend/index.js",
-  "type": "module",
+  "main": "index.js",
+  "engines": {
+    "node": "20.x"
+  },
   "scripts": {
-  "start": "node backend/index.js",
-  "build": "npm install && cd frontend && npm install && npm run build && cd ../admin && npm install --include=dev && npm run build"
-},
-
-"engines": {
-  "node": "18.x"
-},
-
+    "start": "node index.js",
+    "server": "nodemon index.js"
+  },
   "dependencies": {
-    "bcryptjs": "^2.4.3",
-    "cloudinary": "^2.5.1",
-    "cookie-parser": "^1.4.7",
-    "cors": "^2.8.6",
-    "dotenv": "^16.4.7",
-    "express": "^4.21.2",
-    "helmet": "^8.1.0",
-    "jsonwebtoken": "^9.0.2",
-    "mongoose": "^8.9.5",
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "mongoose": "^7.5.0",
+    "cloudinary": "^1.40.0",
     "multer": "^1.4.5-lts.1",
-    "nodemailer": "^8.0.1",
-    "razorpay": "^2.9.5",
-    "stripe": "^17.5.0",
-    "validator": "^13.12.0"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/ThIsIsMaHaR/One_Cart.git"
-  },
-  "author": "",
-  "license": "ISC"
+    "jsonwebtoken": "^9.0.2",
+    "bcrypt": "^5.1.1",
+    "validator": "^13.11.0",
+    "razorpay": "^2.9.2",
+    "stripe": "^13.6.0"
+  }
 }
