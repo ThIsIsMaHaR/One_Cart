@@ -19,70 +19,51 @@ const port = process.env.PORT || 10000;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// 1. Database Connection (Non-blocking so CORS can still respond if DB is slow)
+// 1. Connect to Database
 connectDB().catch(err => console.error("🛑 MongoDB Connection Error:", err));
 
-// 2. BULLETPROOF CORS CONFIGURATION
-const allowedOrigins = [
-    "https://e-comm-onecart.onrender.com",
-    "https://e-comm-onecart-backend.onrender.com",
-    "http://localhost:5173"
-];
-
+// 2. CORS - Allow the backend and frontend domains
 app.use(cors({
-    origin: function (origin, callback) {
-        // Allow requests with no origin (like mobile apps or curl)
-        if (!origin) return callback(null, true);
-        if (allowedOrigins.indexOf(origin) !== -1 || origin.includes('onrender.com')) {
-            return callback(null, true);
-        } else {
-            return callback(new Error('CORS Policy: Origin not allowed'), false);
-        }
-    },
+    origin: ["https://e-comm-onecart.onrender.com", "https://e-comm-onecart-backend.onrender.com", "http://localhost:5173"],
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "token", "adminToken"],
     optionsSuccessStatus: 200 
 }));
 
-// Explicitly handle Preflight requests for all routes
 app.options('*', cors());
 
-// 3. UPDATED HELMET FOR RAZORPAY & CSP
+// 3. HELMET (Loosened for Monolith deployment to ensure React loads)
 app.use(helmet({
-    contentSecurityPolicy: {
-        directives: {
-            "default-src": ["'self'"],
-            "script-src": ["'self'", "'unsafe-inline'", "https://checkout.razorpay.com"],
-            "frame-src": ["'self'", "https://api.razorpay.com", "https://tds.razorpay.com"],
-            "style-src": ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-            "font-src": ["'self'", "https://fonts.gstatic.com"],
-            "img-src": ["'self'", "data:", "https://res.cloudinary.com"],
-            "connect-src": ["'self'", "https://e-comm-onecart-backend.onrender.com", "https://lumberjack.razorpay.com"]
-        },
-    },
+    contentSecurityPolicy: false, 
     crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
 
 app.use(express.json());
 app.use(cookieParser());
 
-// 4. API ROUTES
+// 4. API ROUTES (Must come BEFORE static files)
 app.use('/api/auth', authRouter);
 app.use('/api/user', userRouter);
 app.use('/api/product', productRouter);
 app.use('/api/cart', cartRouter);
 app.use('/api/order', orderRouter);
 
-// 5. STATIC FILES
+// 5. SERVE FRONTEND STATIC FILES
+// Ensure this path correctly points to your frontend/dist folder
 const frontendDist = path.join(__dirname, '../frontend/dist');
 app.use(express.static(frontendDist));
 
+// 6. CATCH-ALL ROUTE (For React Router support)
 app.get('*', (req, res) => {
-    if (req.url.startsWith('/api')) return res.status(404).json({ message: "API not found" });
+    // If it's an API call that doesn't exist, return 404 instead of HTML
+    if (req.url.startsWith('/api')) {
+        return res.status(404).json({ message: "API endpoint not found" });
+    }
+    // Serve the React index.html for all other routes
     res.sendFile(path.join(frontendDist, 'index.html'));
 });
 
 app.listen(port, '0.0.0.0', () => {
-    console.log(`🚀 OneCart Server running on port ${port}`);
+    console.log(`🚀 Monolith Server running on port ${port}`);
 });
