@@ -4,13 +4,12 @@ import { useNavigate } from 'react-router-dom'
 import { IoEyeOutline, IoEye } from "react-icons/io5";
 import { authDataContext } from '../context/AuthContext';
 import { userDataContext } from '../context/UserContext';
-import axios from 'axios'
-import { toast } from 'react-toastify';
+import axios from 'axios';
 import Loading from '../component/Loading';
+import { toast } from 'react-toastify';
 
-function Registration() {
+function Login() {
     const [show, setShow] = useState(false)
-    const [name, setName] = useState("")
     const [email, setEmail] = useState("")
     const [password, setPassword] = useState("")
     const [loading, setLoading] = useState(false)
@@ -19,120 +18,113 @@ function Registration() {
     const { getCurrentUser } = useContext(userDataContext)
     const navigate = useNavigate()
 
-    const handleSignup = async (e) => {
+    const handleLogin = async (e) => {
         e.preventDefault()
         setLoading(true)
         
         try {
-            // Normalize URL and Data
-            const baseUrl = serverUrl.endsWith('/') ? serverUrl.slice(0, -1) : serverUrl;
-            const payload = { 
-                name: name.trim(), 
-                email: email.trim().toLowerCase(), 
-                password 
-            };
-
-            const response = await axios.post(`${baseUrl}/api/auth/registration`, 
-                payload, 
-                { 
-                    withCredentials: true,
-                    headers: { 'Content-Type': 'application/json' }
-                }
-            )
+            // hitting the backend with correct credentials
+            const response = await axios.post(`${serverUrl}/api/auth/login`, {
+                email: email.trim().toLowerCase(), // Normalize email
+                password
+            }, { 
+                withCredentials: true, // REQUIRED for cookies to work
+                headers: { 'Content-Type': 'application/json' }
+            })
 
             if (response.data.success) {
-                toast.success("User Registration Successful")
+                // 1. Fetch user data immediately after successful cookie placement
+                await getCurrentUser() 
                 
-                // Fetch the user data (this relies on the cookie sent by the registration response)
-                await getCurrentUser()
+                toast.success(response.data.message || "Welcome to OneCart!")
                 
-                // Navigate to home
+                // 2. Clear fields and navigate
+                setEmail("")
+                setPassword("")
                 navigate("/")
             }
         } catch (error) {
-            console.error("Signup Error Details:", error.response?.data || error.message);
+            console.error("Full Login Error:", error.response || error)
             
-            // Check if server is reachable (important for Render spin-up)
+            // 3. Detailed Error Feedback
             if (!error.response) {
-                toast.error("Server is not responding. Please wait a moment.");
+                // Occurs if the server is sleeping (Render free tier) or down
+                toast.error("Server is not responding. Please wait a moment and try again.")
             } else {
-                const errorMsg = error.response.data.message || "User Registration Failed";
-                toast.error(errorMsg);
+                // Displays the specific error from your AuthController (e.g., "Incorrect password")
+                const errorMsg = error.response.data.message || "Login failed. Please try again."
+                toast.error(errorMsg)
             }
         } finally {
+            // Ensures loading stops regardless of success or failure
             setLoading(false)
         }
     }
 
     return (
-        <div className='w-[100vw] h-[100vh] bg-gradient-to-l from-[#141414] to-[#0c2025] text-[white] flex flex-col items-center justify-start overflow-x-hidden'>
-            {/* Logo Section */}
+        <div className='w-[100vw] h-[100vh] bg-gradient-to-l from-[#141414] to-[#0c2025] text-[white] flex flex-col items-center justify-start'>
+            {/* Header / Logo */}
             <div className='w-[100%] h-[80px] flex items-center justify-start px-[30px] gap-[10px] cursor-pointer' onClick={() => navigate("/")}>
-                <img className='w-[40px]' src={Logo} alt="OneCart" />
+                <img className='w-[40px]' src={Logo} alt="OneCart Logo" />
                 <h1 className='text-[22px] font-sans '>OneCart</h1>
             </div>
 
             {/* Title Section */}
             <div className='w-[100%] h-[100px] flex items-center justify-center flex-col gap-[10px]'>
-                <span className='text-[25px] font-semibold'>Registration Page</span>
-                <span className='text-[16px] text-gray-400'>Join OneCart and start shopping today</span>
+                <span className='text-[25px] font-semibold'>Login Page</span>
+                <span className='text-[16px] text-gray-400'>Welcome back! Please enter your details.</span>
             </div>
 
-            {/* Registration Card */}
-            <div className='max-w-[600px] w-[90%] min-h-[520px] bg-[#00000025] border-[1px] border-[#96969635] backdrop-blur-2xl rounded-lg shadow-lg flex items-center justify-center py-8'>
-                <form onSubmit={handleSignup} className='w-[90%] flex flex-col items-center justify-start gap-[20px]'>
-                    <div className='w-[90%] flex flex-col items-center justify-center gap-[15px]'>
+            {/* Login Card */}
+            <div className='max-w-[600px] w-[90%] h-[420px] bg-[#00000025] border-[1px] border-[#96969635] backdrop-blur-2xl rounded-lg shadow-lg flex items-center justify-center '>
+                <form onSubmit={handleLogin} className='w-[90%] h-[90%] flex flex-col items-center justify-start gap-[20px]'>
+                    <div className='w-[90%] flex flex-col items-center justify-center gap-[15px] relative mt-10'>
                         
-                        <input 
-                            type="text" 
-                            className='w-[100%] h-[50px] border-[2px] border-[#96969635] bg-transparent rounded-lg px-[20px] outline-none focus:border-[#6060f5] placeholder-gray-500' 
-                            placeholder='Full Name' 
-                            required 
-                            onChange={(e) => setName(e.target.value)} 
-                            value={name} 
-                        />
-                        
+                        {/* Email Input */}
                         <input 
                             type="email" 
-                            className='w-[100%] h-[50px] border-[2px] border-[#96969635] bg-transparent rounded-lg px-[20px] outline-none focus:border-[#6060f5] placeholder-gray-500' 
-                            placeholder='Email Address' 
+                            className='w-[100%] h-[50px] border-[2px] border-[#96969635] bg-transparent rounded-lg px-[20px] placeholder-[#ffffffc7] font-semibold outline-none focus:border-[#6060f5] transition-all' 
+                            placeholder='Email' 
                             required 
                             onChange={(e) => setEmail(e.target.value)} 
                             value={email} 
                         />
                         
+                        {/* Password Input Group */}
                         <div className="w-full relative">
                             <input 
                                 type={show ? "text" : "password"} 
-                                className='w-[100%] h-[50px] border-[2px] border-[#96969635] bg-transparent rounded-lg px-[20px] outline-none focus:border-[#6060f5] placeholder-gray-500' 
-                                placeholder='Password (Min. 8 characters)' 
+                                className='w-[100%] h-[50px] border-[2px] border-[#96969635] bg-transparent rounded-lg px-[20px] placeholder-[#ffffffc7] font-semibold outline-none focus:border-[#6060f5] transition-all' 
+                                placeholder='Password' 
                                 required 
                                 onChange={(e) => setPassword(e.target.value)} 
                                 value={password} 
                             />
                             <div 
-                                className='absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer text-xl text-gray-400 hover:text-white transition-colors' 
+                                className="absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer text-xl text-[#969696] hover:text-white"
                                 onClick={() => setShow(!show)}
                             >
                                 {show ? <IoEye /> : <IoEyeOutline />}
                             </div>
                         </div>
 
+                        {/* Submit Button */}
                         <button 
-                            type="submit" 
-                            disabled={loading} 
-                            className='w-[100%] h-[50px] bg-[#6060f5] hover:bg-[#4e4ef0] disabled:bg-gray-600 rounded-lg mt-[20px] font-semibold flex items-center justify-center transition-all'
+                            type="submit"
+                            disabled={loading}
+                            className='w-[100%] h-[50px] bg-[#6060f5] hover:bg-[#4e4ef0] disabled:bg-gray-600 transition-colors rounded-lg mt-[10px] text-[17px] font-semibold flex items-center justify-center'
                         >
-                            {loading ? <Loading /> : "Create Account"}
+                            {loading ? <Loading /> : "Login"}
                         </button>
-
-                        <p className='flex gap-[10px] text-sm mt-2'>
-                            Already have an account? 
+                        
+                        {/* Toggle to Signup */}
+                        <p className='flex gap-[10px] mt-2 text-sm'>
+                            Don't have an account? 
                             <span 
                                 className='text-[#5555f6cf] font-bold cursor-pointer hover:underline' 
-                                onClick={() => navigate("/login")}
+                                onClick={() => navigate("/signup")}
                             >
-                                Login
+                                Create New Account
                             </span>
                         </p>
                     </div>
@@ -142,4 +134,4 @@ function Registration() {
     )
 }
 
-export default Registration
+export default Login
