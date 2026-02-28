@@ -3,7 +3,7 @@ import 'dotenv/config';
 import cookieParser from 'cookie-parser';
 import path from 'path';
 import helmet from 'helmet';
-import cors from 'cors'; // Ensure you've run: npm install cors
+import cors from 'cors';
 import { fileURLToPath } from 'url';
 import connectDB from './config/db.js';
 
@@ -22,20 +22,25 @@ const __dirname = path.dirname(__filename);
 // 1. Database Connection
 connectDB();
 
-// 2. ROBUST CORS CONFIGURATION
+// 2. ULTIMATE CORS CONFIGURATION
+// This handles the "Preflight" OPTIONS request which is failing right now.
 const allowedOrigins = [
     "https://e-comm-onecart.onrender.com",
-    "https://e-comm-onecart.onrender.com/", // With trailing slash
     "http://localhost:5173"
 ];
 
 app.use(cors({
-    origin: (origin, callback) => {
-        // Allow requests with no origin (like mobile apps, Postman, or server-to-server)
-        if (!origin || allowedOrigins.includes(origin)) {
+    origin: function (origin, callback) {
+        // 1. Allow requests with no origin (like Postman or mobile apps)
+        if (!origin) return callback(null, true);
+        
+        // 2. Clean the origin string (remove trailing slashes for comparison)
+        const cleanOrigin = origin.endsWith('/') ? origin.slice(0, -1) : origin;
+
+        if (allowedOrigins.includes(cleanOrigin)) {
             callback(null, true);
         } else {
-            console.error(`CORS blocked for origin: ${origin}`);
+            console.error(`❌ CORS blocked for origin: ${origin}`);
             callback(new Error('Not allowed by CORS'));
         }
     },
@@ -46,15 +51,16 @@ app.use(cors({
 
 // 3. ESSENTIAL MIDDLEWARES
 app.use(helmet({ 
-    contentSecurityPolicy: false, // Allows React to run without CSP blocks
-    crossOriginResourcePolicy: { policy: "cross-origin" } // Allows images to load across domains
+    contentSecurityPolicy: false, 
+    crossOriginResourcePolicy: { policy: "cross-origin" } 
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-// 4. API ROUTES (Must be above static serving)
-app.get('/api/health', (req, res) => res.json({ status: "ok", message: "OneCart Backend is alive!" }));
+// 4. API ROUTES
+// Health check - verify this works in your browser first!
+app.get('/api/health', (req, res) => res.json({ status: "ok", message: "Backend is reachable!" }));
 
 app.use('/api/auth', authRouter);
 app.use('/api/user', userRouter);
@@ -62,26 +68,21 @@ app.use('/api/product', productRouter);
 app.use('/api/cart', cartRouter);
 app.use('/api/order', orderRouter);
 
-// 5. STATIC FILES & FRONTEND SERVING
+// 5. SERVING FRONTEND
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Serve the production build of the React app
+// Serve static files from the React app
 const distPath = path.join(__dirname, '../frontend/dist');
 app.use(express.static(distPath));
 
-// The Catch-All for React Router (MUST be the last route)
+// The Catch-All for React Router
 app.get('*', (req, res) => {
-    res.sendFile(path.join(distPath, 'index.html'), (err) => {
-        if (err) {
-            // If the frontend isn't built yet, don't crash the server
-            res.status(500).send("Frontend build not found. Run 'npm run build' in the frontend folder.");
-        }
-    });
+    res.sendFile(path.join(distPath, 'index.html'));
 });
 
 // 6. GLOBAL ERROR HANDLER
 app.use((err, req, res, next) => {
-    console.error("❌ SERVER ERROR:", err.message);
+    console.error("SERVER ERROR:", err.message);
     res.status(err.status || 500).json({ 
         success: false, 
         message: err.message || "Internal Server Error" 
@@ -90,5 +91,5 @@ app.use((err, req, res, next) => {
 
 app.listen(port, () => {
     console.log(`🚀 OneCart Server running on port ${port}`);
-    console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`📡 Allowed Origins: ${allowedOrigins.join(', ')}`);
 });
