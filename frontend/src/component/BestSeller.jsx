@@ -4,40 +4,52 @@ import { shopDataContext } from '../context/ShopContext'
 import Card from './Card'
 
 function BestSeller() {
-    const { products } = useContext(shopDataContext)
-    const [bestSeller, setBestSeller] = useState([])
 
-    useEffect(() => {
-        if (Array.isArray(products)) {
-            const filterProduct = products.filter((item) => item.bestseller === true)
-            setBestSeller(filterProduct.slice(0, 4))
+  const { products } = useContext(shopDataContext)
+  const [bestSeller, setBestSeller] = useState([])
+
+  useEffect(() => {
+    if (Array.isArray(products)) {
+      const filtered = products.filter(item => item.bestseller === true)
+      setBestSeller(filtered.slice(0, 4))
+    }
+  }, [products])
+
+  return (
+    <div className="w-full py-10">
+
+      <div className="text-center">
+        <Title text1={"BEST"} text2={"SELLER"} />
+        <p className="mt-2 text-sm md:text-lg text-blue-100 px-4">
+          Tried, Tested, Loved – Discover Our All-Time Best Sellers.
+        </p>
+      </div>
+
+      <div className="
+        mt-10 
+        grid 
+        grid-cols-1 
+        sm:grid-cols-2 
+        md:grid-cols-3 
+        lg:grid-cols-4 
+        gap-8 
+        px-6
+      ">
+        {
+          bestSeller.map((item, index) => (
+            <Card
+              key={index}
+              id={item._id}
+              name={item.name}
+              price={item.price}
+              image={item.image?.[0] || ""}
+            />
+          ))
         }
-    }, [products])
+      </div>
 
-    return (
-        <div>
-            <div className='h-[8%] w-[100%] text-center mt-[50px]'>
-                <Title text1={"BEST"} text2={"SELLER"} />
-                <p className='w-[100%] m-auto text-[13px] md:text-[20px] px-[10px] text-blue-100'>
-                    Tried, Tested, Loved – Discover Our All-Time Best Sellers.
-                </p>
-            </div>
-
-            <div className='w-[100%] mt-[30px] flex items-center justify-center flex-wrap gap-[50px]'>
-                {
-                    bestSeller.map((item, index) => (
-                        <Card
-                            key={index}
-                            id={item._id}
-                            name={item.name}
-                            price={item.price}
-                            image={item.image && item.image[0] ? item.image[0] : ""}
-                        />
-                    ))
-                }
-            </div>
-        </div>
-    )
+    </div>
+  )
 }
 
 export default BestSeller
