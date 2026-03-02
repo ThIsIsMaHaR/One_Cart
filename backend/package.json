@@ -1,0 +1,34 @@
+{
+  "name": "one-cart",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "index.js",
+  "engines": {
+    "node": ">=20.x"
+  },
+  "scripts": {
+  "start": "node index.js",
+  "dev": "nodemon",
+  "server": "nodemon"
+},
+  "dependencies": {
+    "axios": "^1.9.0",
+    "bcryptjs": "^3.0.3",
+    "cloudinary": "^2.9.0",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.6",
+    "dotenv": "^16.6.1",
+    "express": "^4.22.1",
+    "firebase": "^11.9.0",
+    "helmet": "^8.1.0",
+    "jsonwebtoken": "^9.0.3",
+    "mongoose": "^7.8.9",
+    "multer": "^1.4.5-lts.1",
+    "razorpay": "^2.9.2",
+    "stripe": "^13.6.0",
+    "validator": "^13.11.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.4"
+  }
+}
