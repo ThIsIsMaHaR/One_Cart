@@ -13,12 +13,15 @@ function ProductDetail() {
   const [selectedImage, setSelectedImage] = useState('');
   const [selectedSize, setSelectedSize] = useState('');
 
-  // Fetch product data from context
+  // Cloudinary base URL (if your DB stores only filenames)
+  const cloudinaryBase = "https://res.cloudinary.com/<your-cloud-name>/image/upload/";
+
   useEffect(() => {
     if (products && products.length > 0) {
-      const product = products.find(p => p._id === productId);
+      const product = products.find(item => item._id === productId);
       if (product) {
         setProductData(product);
+        // Set first available image
         setSelectedImage(product.image1 || product.image2 || '');
       }
     }
@@ -26,8 +29,10 @@ function ProductDetail() {
 
   if (!productData) return <Loading />;
 
-  // Gather all available images
-  const images = [productData.image1, productData.image2, productData.image3, productData.image4].filter(Boolean);
+  // Prepare images (convert filenames to full URLs if needed)
+  const images = [productData.image1, productData.image2, productData.image3, productData.image4]
+    .filter(Boolean)
+    .map(img => img.startsWith("http") ? img : `${cloudinaryBase}${img}`);
 
   return (
     <div className="w-full overflow-x-hidden bg-gradient-to-l from-[#141414] to-[#0c2025] pt-20">
