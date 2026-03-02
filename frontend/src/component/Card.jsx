@@ -1,31 +1,29 @@
-import React, { useContext } from 'react'
-import { shopDataContext } from '../context/ShopContext'
+import React from 'react'
 import { useNavigate } from 'react-router-dom'
 
-function Card({ name, image, id, price }) {
-    const { currency } = useContext(shopDataContext)
-    const navigate = useNavigate()
+function Card({ id, name, price, image }) {
 
-    return (
-        <div 
-            className='w-[300px] max-w-[90%] h-[400px] bg-[#ffffff0a] backdrop-blur-lg rounded-lg hover:scale-[102%] transition-transform flex flex-col p-[10px] cursor-pointer border border-[#80808049]'
-            onClick={() => navigate(`/productdetail/${id}`)}
-        >
-            <img 
-                src={image} 
-                alt={name} 
-                className='w-full h-[80%] rounded-sm object-cover'
-            />
+  const navigate = useNavigate()
 
-            <div className='text-[#c3f6fa] text-[18px] py-[10px]'>
-                {name}
-            </div>
+  return (
+    <div 
+      onClick={() => navigate(`/product/${id}`)} 
+      className='w-[230px] h-[350px] bg-slate-700 rounded-md p-2 cursor-pointer hover:scale-105 transition'
+    >
+      <div className='w-full h-[80%] overflow-hidden'>
+        <img 
+          src={image} 
+          alt={name} 
+          className='w-full h-full object-cover rounded-sm'
+        />
+      </div>
 
-            <div className='text-[#f3fafa] text-[14px]'>
-                {currency} {price}
-            </div>
-        </div>
-    )
+      <div className='mt-2 text-white'>
+        <p className='text-[16px]'>{name}</p>
+        <p className='text-[14px]'>₹ {price}</p>
+      </div>
+    </div>
+  )
 }
 
 export default Card
