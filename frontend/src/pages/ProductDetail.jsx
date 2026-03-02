@@ -8,69 +8,97 @@ import Loading from '../component/Loading';
 function ProductDetail() {
   const { productId } = useParams();
   const { products, currency, addtoCart, loading } = useContext(shopDataContext);
+
   const [productData, setProductData] = useState(null);
   const [selectedImage, setSelectedImage] = useState('');
   const [selectedSize, setSelectedSize] = useState('');
 
+  // Fetch product data from context
   useEffect(() => {
-    const product = products.find(p => p._id === productId);
-    if (product) {
-      setProductData(product);
-      setSelectedImage(product.image1 || product.image2 || '');
+    if (products && products.length > 0) {
+      const product = products.find(p => p._id === productId);
+      if (product) {
+        setProductData(product);
+        setSelectedImage(product.image1 || product.image2 || '');
+      }
     }
   }, [productId, products]);
 
-  if (!productData) return <div className="opacity-0"></div>;
+  if (!productData) return <Loading />;
 
+  // Gather all available images
   const images = [productData.image1, productData.image2, productData.image3, productData.image4].filter(Boolean);
 
   return (
     <div className="w-full overflow-x-hidden bg-gradient-to-l from-[#141414] to-[#0c2025] pt-20">
+      
+      {/* Product Images and Info */}
       <div className="max-w-7xl mx-auto flex flex-col lg:flex-row gap-8 px-4 md:px-6">
         
-        {/* Left - Images */}
+        {/* Left: Images */}
         <div className="lg:w-1/2 flex flex-col md:flex-row gap-4">
-          {/* Thumbnail Images */}
+          {/* Thumbnails */}
           <div className="flex flex-row md:flex-col gap-2">
             {images.map((img, idx) => (
-              <div key={idx} className="w-16 md:w-20 h-16 md:h-20 border border-gray-600 rounded-md cursor-pointer overflow-hidden">
-                <img src={img} alt="" className="w-full h-full object-cover" onClick={() => setSelectedImage(img)} />
+              <div 
+                key={idx} 
+                className="w-16 md:w-20 h-16 md:h-20 border border-gray-600 rounded-md cursor-pointer overflow-hidden"
+              >
+                <img 
+                  src={img} 
+                  alt={`${productData.name} ${idx+1}`} 
+                  className="w-full h-full object-cover" 
+                  onClick={() => setSelectedImage(img)} 
+                />
               </div>
             ))}
           </div>
           {/* Main Image */}
           <div className="flex-1 border border-gray-600 rounded-md overflow-hidden">
-            <img src={selectedImage} alt={productData.name} className="w-full h-full object-contain" />
+            <img 
+              src={selectedImage} 
+              alt={productData.name} 
+              className="w-full h-full object-contain" 
+            />
           </div>
         </div>
 
-        {/* Right - Product Info */}
+        {/* Right: Product Info */}
         <div className="lg:w-1/2 flex flex-col gap-4 text-white">
           <h1 className="text-3xl md:text-4xl font-bold">{productData.name.toUpperCase()}</h1>
+          
+          {/* Ratings */}
           <div className="flex items-center gap-2">
             {[1,2,3,4].map(i => <FaStar key={i} className="text-yellow-400" />)}
             <FaStarHalfAlt className="text-yellow-400" />
             <span className="text-white/80">(124)</span>
           </div>
+
+          {/* Price */}
           <p className="text-2xl font-semibold">{currency} {productData.price}</p>
+
+          {/* Description */}
           <p className="text-white/80">{productData.description}</p>
 
           {/* Size Selection */}
-          <div className="mt-4">
-            <p className="text-white font-semibold mb-2">Select Size</p>
-            <div className="flex gap-2 flex-wrap">
-              {productData.sizes.map((s, idx) => (
-                <button
-                  key={idx}
-                  className={`px-4 py-2 border rounded-md ${selectedSize === s ? 'bg-white text-black' : 'bg-gray-700 text-white'}`}
-                  onClick={() => setSelectedSize(s)}
-                >
-                  {s}
-                </button>
-              ))}
+          {productData.sizes && productData.sizes.length > 0 && (
+            <div className="mt-4">
+              <p className="text-white font-semibold mb-2">Select Size</p>
+              <div className="flex gap-2 flex-wrap">
+                {productData.sizes.map((s, idx) => (
+                  <button
+                    key={idx}
+                    className={`px-4 py-2 border rounded-md ${selectedSize === s ? 'bg-white text-black' : 'bg-gray-700 text-white'}`}
+                    onClick={() => setSelectedSize(s)}
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
+          {/* Add to Cart */}
           <button
             className="mt-4 px-6 py-3 bg-blue-600 text-white rounded-md shadow hover:bg-blue-700 transition"
             onClick={() => addtoCart(productData._id, selectedSize)}
@@ -78,6 +106,7 @@ function ProductDetail() {
             {loading ? <Loading /> : "Add to Cart"}
           </button>
 
+          {/* Additional Info */}
           <div className="mt-4 border-t border-gray-600 pt-4 text-white/80 text-sm space-y-1">
             <p>100% Original Product.</p>
             <p>Cash on delivery available.</p>
@@ -98,7 +127,7 @@ function ProductDetail() {
         />
       </div>
     </div>
-  );
+  )
 }
 
 export default ProductDetail;
