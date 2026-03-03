@@ -13,29 +13,34 @@ function ProductDetail() {
   const [selectedImage, setSelectedImage] = useState('');
   const [selectedSize, setSelectedSize] = useState('');
 
+  const CLOUDINARY_URL = "https://res.cloudinary.com/<your-cloud-name>/image/upload/";
+
   useEffect(() => {
     if (products && products.length > 0) {
       const product = products.find(item => item._id === productId);
       if (product) {
         setProductData(product);
 
-        // Use images exactly as stored in DB
-        const imgs = [product.image1, product.image2, product.image3, product.image4].filter(Boolean);
-        setSelectedImage(imgs[0]); // set first image
+        // Map the array of images to full URLs
+        const imgs = (product.image || [])
+                      .filter(Boolean)
+                      .map(img => img.startsWith("http") ? img : `${CLOUDINARY_URL}${img}`);
+
+        setSelectedImage(imgs[0] || `${CLOUDINARY_URL}placeholder.png`);
       }
     }
   }, [productId, products]);
 
   if (!productData) return <Loading />;
 
-  const images = [productData.image1, productData.image2, productData.image3, productData.image4].filter(Boolean);
+  const images = (productData.image || [])
+                  .filter(Boolean)
+                  .map(img => img.startsWith("http") ? img : `${CLOUDINARY_URL}${img}`);
+  if (images.length === 0) images.push(`${CLOUDINARY_URL}placeholder.png`);
 
   return (
     <div className="w-full overflow-x-hidden bg-gradient-to-l from-[#141414] to-[#0c2025] pt-20">
-      
-      {/* Product Images and Info */}
       <div className="max-w-7xl mx-auto flex flex-col lg:flex-row gap-8 px-4 md:px-6">
-        
         {/* Left: Images */}
         <div className="lg:w-1/2 flex flex-col md:flex-row gap-4">
           {/* Thumbnails */}
@@ -67,21 +72,14 @@ function ProductDetail() {
         {/* Right: Product Info */}
         <div className="lg:w-1/2 flex flex-col gap-4 text-white">
           <h1 className="text-3xl md:text-4xl font-bold">{productData.name.toUpperCase()}</h1>
-          
-          {/* Ratings */}
           <div className="flex items-center gap-2">
             {[1,2,3,4].map(i => <FaStar key={i} className="text-yellow-400" />)}
             <FaStarHalfAlt className="text-yellow-400" />
             <span className="text-white/80">(124)</span>
           </div>
-
-          {/* Price */}
           <p className="text-2xl font-semibold">{currency} {productData.price}</p>
-
-          {/* Description */}
           <p className="text-white/80">{productData.description}</p>
 
-          {/* Size Selection */}
           {productData.sizes && productData.sizes.length > 0 && (
             <div className="mt-4">
               <p className="text-white font-semibold mb-2">Select Size</p>
@@ -99,7 +97,6 @@ function ProductDetail() {
             </div>
           )}
 
-          {/* Add to Cart */}
           <button
             className="mt-4 px-6 py-3 bg-blue-600 text-white rounded-md shadow hover:bg-blue-700 transition"
             onClick={() => addtoCart(productData._id, selectedSize)}
@@ -107,7 +104,6 @@ function ProductDetail() {
             {loading ? <Loading /> : "Add to Cart"}
           </button>
 
-          {/* Additional Info */}
           <div className="mt-4 border-t border-gray-600 pt-4 text-white/80 text-sm space-y-1">
             <p>100% Original Product.</p>
             <p>Cash on delivery available.</p>
@@ -116,7 +112,6 @@ function ProductDetail() {
         </div>
       </div>
 
-      {/* Description + Related Products */}
       <div className="max-w-7xl mx-auto mt-16 px-4 md:px-6">
         <h2 className="text-xl md:text-2xl font-semibold text-white mb-4">Description</h2>
         <p className="bg-gray-800 p-6 rounded-md text-white">{productData.description}</p>
@@ -128,7 +123,7 @@ function ProductDetail() {
         />
       </div>
     </div>
-  )
+  );
 }
 
 export default ProductDetail;
