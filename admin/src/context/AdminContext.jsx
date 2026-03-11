@@ -4,13 +4,13 @@ import { toast } from "react-toastify";
 
 export const adminDataContext = createContext();
 
-// Axios default settings
+// Cookies allow karne ke liye settings
 axios.defaults.withCredentials = true;
 
 const AdminContextProvider = (props) => {
     const [adminData, setAdminData] = useState(null);
     
-    // Environment Variable for backend
+    // Render Backend URL
     const backendUrl = import.meta.env.VITE_API_URL || "https://onecart-backend-3jhl.onrender.com"; 
 
     const loginAdmin = async (email, password) => {
@@ -22,7 +22,6 @@ const AdminContextProvider = (props) => {
                 return true;
             }
         } catch (error) {
-            console.error("Login detail:", error);
             const errorMsg = error.response?.data?.message || "Login Failed";
             toast.error(errorMsg);
             return false;
@@ -30,30 +29,24 @@ const AdminContextProvider = (props) => {
     };
 
     const getAdmin = async () => {
-        if (!backendUrl) return;
         try {
             const { data } = await axios.get(`${backendUrl}/api/auth/getadmin`);
-            if (data.success) {
-                setAdminData(data.adminData);
-            } else {
-                setAdminData(null);
-            }
+            if (data.success) setAdminData(data.adminData);
         } catch (error) {
             setAdminData(null);
         }
     };
 
-    useEffect(() => {
-        getAdmin();
-    }, []);
+    useEffect(() => { getAdmin(); }, []);
 
+    // 🚀 FIX: serverUrl aur backendUrl dono export kar rahe hain
     const value = {
         adminData,
         setAdminData,
         loginAdmin,
         getAdmin,
         backendUrl,
-        serverUrl: backendUrl // 👈 Yahan fix hai! Dono names export kar diye
+        serverUrl: backendUrl 
     };
 
     return (
