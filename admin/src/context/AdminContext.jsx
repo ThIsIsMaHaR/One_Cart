@@ -2,15 +2,13 @@ import { createContext, useState, useEffect } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
 
+// 1. Context ko hamesha issi naam se export karein
 export const adminDataContext = createContext();
 
-// Cookies allow karne ke liye settings
 axios.defaults.withCredentials = true;
 
 const AdminContextProvider = (props) => {
     const [adminData, setAdminData] = useState(null);
-    
-    // Render Backend URL
     const backendUrl = import.meta.env.VITE_API_URL || "https://onecart-backend-3jhl.onrender.com"; 
 
     const loginAdmin = async (email, password) => {
@@ -22,6 +20,7 @@ const AdminContextProvider = (props) => {
                 return true;
             }
         } catch (error) {
+            console.error("Login detail:", error);
             const errorMsg = error.response?.data?.message || "Login Failed";
             toast.error(errorMsg);
             return false;
@@ -29,17 +28,24 @@ const AdminContextProvider = (props) => {
     };
 
     const getAdmin = async () => {
+        if (!backendUrl) return;
         try {
             const { data } = await axios.get(`${backendUrl}/api/auth/getadmin`);
-            if (data.success) setAdminData(data.adminData);
+            if (data.success) {
+                setAdminData(data.adminData);
+            } else {
+                setAdminData(null);
+            }
         } catch (error) {
             setAdminData(null);
         }
     };
 
-    useEffect(() => { getAdmin(); }, []);
+    useEffect(() => {
+        getAdmin();
+    }, []);
 
-    // 🚀 FIX: serverUrl aur backendUrl dono export kar rahe hain
+    // 🚀 Yahan humne serverUrl add kiya hai jo aapka component dhoond raha hai
     const value = {
         adminData,
         setAdminData,

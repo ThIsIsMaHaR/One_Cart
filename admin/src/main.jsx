@@ -8,7 +8,7 @@ import AdminContextProvider from './context/AdminContext.jsx'
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <BrowserRouter>
-      {/* Provider name must match the export from AdminContext.jsx */}
+      {/* 👈 Provider hamesha App ke upar hona chahiye */}
       <AdminContextProvider> 
         <App />
       </AdminContextProvider>
