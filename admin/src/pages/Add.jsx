@@ -2,7 +2,8 @@ import React, { useContext, useState } from 'react';
 import Nav from '../component/Nav';
 import Sidebar from '../component/Sidebar';
 import upload from '../assets/upload image.jpg';
-import { authDataContext } from '../context/AuthContext';
+// 🚀 FIX 1: Correct Context Import
+import { adminDataContext } from '../context/AdminContext'; 
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import Loading from '../component/Loading';
@@ -22,7 +23,8 @@ function Add() {
   const [sizes, setSizes] = useState([]);
   const [loading, setLoading] = useState(false);
   
-  const { token } = useContext(authDataContext);
+  // 🚀 FIX 2: Correct Context Destructuring (Using serverUrl)
+  const { serverUrl, adminData } = useContext(adminDataContext);
 
   const handleAddProduct = async (e) => {
     e.preventDefault();
@@ -48,18 +50,16 @@ function Add() {
       if (image3) formData.append("image3", image3);
       if (image4) formData.append("image4", image4);
 
-      // We use a relative path. This works because the Admin is served from the same domain as the API.
-      const response = await axios.post("/api/product/add", formData, {
+      // 🚀 FIX 3: Use Full serverUrl for Production
+      const response = await axios.post(`${serverUrl}/api/product/add`, formData, {
         headers: { 
-          "Content-Type": "multipart/form-data",
-          "token": token // Ensure this matches what your adminAuth middleware expects
+          "Content-Type": "multipart/form-data"
+          // Cookies handle auth via withCredentials: true (already set in Context)
         }
       });
 
       if (response.data.success) {
         toast.success(response.data.message || "Product Added!");
-        
-        // Resetting form
         setName("");
         setDescription("");
         setPrice("");
@@ -74,7 +74,6 @@ function Add() {
       }
     } catch (error) {
       console.error("Upload Error:", error);
-      // This will show you the ACTUAL server error (like "Cloudinary Error" or "Database Error")
       const errorMsg = error.response?.data?.message || "Error uploading product";
       toast.error(errorMsg);
     } finally {
@@ -207,7 +206,7 @@ function Add() {
               type="checkbox" 
               id="bestseller" 
               checked={bestseller} 
-              onChange={() => {}} 
+              readOnly
               className='w-5 h-5 cursor-pointer' 
             />
             <label htmlFor="bestseller" className='cursor-pointer select-none'>Add to Bestseller</label>
@@ -216,7 +215,7 @@ function Add() {
           <button 
             type="submit"
             disabled={loading}
-            className='w-full max-w-[200px] py-4 rounded-xl bg-[#46d1f7] text-black font-bold text-lg hover:bg-[#3bb8db] transition-colors disabled:opacity-50'
+            className='w-full max-w-[200px] py-4 rounded-xl bg-[#46d1f7] text-black font-bold text-lg hover:bg-[#3bb8db] transition-colors disabled:opacity-50 flex items-center justify-center'
           >
             {loading ? <Loading /> : "ADD PRODUCT"}
           </button>

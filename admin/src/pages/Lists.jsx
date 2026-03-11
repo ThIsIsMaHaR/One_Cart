@@ -1,18 +1,22 @@
 import React, { useContext, useEffect, useState } from 'react'
 import Nav from '../component/Nav'
 import Sidebar from '../component/Sidebar'
-import { authDataContext } from '../context/AuthContext'
+// 🚀 FIX 1: Correct Context Import (adminDataContext)
+import { adminDataContext } from '../context/AdminContext'
 import axios from 'axios'
 import { toast } from 'react-toastify'
 
 function Lists() {
   const [list, setList] = useState([])
-  const { serverUrl } = useContext(authDataContext)
+  
+  // 🚀 FIX 2: Correct Context Destructuring
+  const { serverUrl } = useContext(adminDataContext)
 
   // Fetch products from backend
   const fetchList = async () => {
     try {
-      const response = await axios.get(`${serverUrl}/api/product/list`)
+      // 🚀 FIX 3: Ensure withCredentials is true if your backend checks sessions/cookies
+      const response = await axios.get(`${serverUrl}/api/product/list`, { withCredentials: true })
       
       if (response.data?.success && Array.isArray(response.data.products)) {
         setList(response.data.products)
@@ -49,8 +53,10 @@ function Lists() {
   }
 
   useEffect(() => {
-    fetchList()
-  }, [])
+    if(serverUrl) {
+      fetchList()
+    }
+  }, [serverUrl])
 
   return (
     <div className='w-[100vw] min-h-[100vh] bg-gradient-to-l from-[#141414] to-[#0c2025] text-white'>
@@ -69,7 +75,7 @@ function Lists() {
                 key={item._id || index} 
                 className='w-[90%] md:h-[150px] h-[120px] bg-slate-600 rounded-xl flex items-center justify-start gap-[5px] md:gap-[30px] p-[10px] md:px-[30px]'
               >
-                {/* Display all images for the product */}
+                {/* Product Images */}
                 <div className='flex gap-2 w-[30%] h-full overflow-x-auto'>
                   {item.image?.length > 0 ? (
                     item.image.map((img, idx) => (
@@ -113,7 +119,7 @@ function Lists() {
                 {/* Remove Button */}
                 <div className='w-[10%] h-full flex items-center justify-center'>
                   <span 
-                    className='w-[35px] h-[35px] flex items-center justify-center rounded-md hover:bg-red-500 hover:text-white transition-all cursor-pointer' 
+                    className='w-[35px] h-[35px] flex items-center justify-center rounded-md hover:bg-red-500 hover:text-white transition-all cursor-pointer border border-transparent hover:border-white' 
                     onClick={() => removeList(item._id)}
                   >
                     X
