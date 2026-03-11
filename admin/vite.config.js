@@ -4,25 +4,25 @@ import tailwindcss from '@tailwindcss/vite'
 
 // https://vite.dev/config/
 export default defineConfig({
-  // 1. Plugins: React for logic, Tailwind for styling
+  // 1. Plugins
   plugins: [react(), tailwindcss()],
 
-  // 2. Base: CRITICAL for sub-directory deployment
-  base: '/admin/', 
+  // 2. Base: FIX IS HERE! 
+  // Root deployment ke liye ise '/' hi rehna chahiye.
+  base: '/', 
 
   build: {
-    // 3. Output Directory: Where the finished files go
+    // 3. Output Directory
     outDir: 'dist',
     
-    // 4. Asset Handling: Ensures small images are inlined and 
-    // large ones are organized in an assets folder
+    // 4. Assets: Vite handles this automatically
     assetsDir: 'assets',
     
-    // 5. Clean: Always wipe the old folder before a new build
+    // 5. Clean
     emptyOutDir: true,
 
-    // 6. Increase chunk size warning limit
-    chunkSizeWarningLimit: 2000, // 2 MB
+    // 6. Chunk size limit
+    chunkSizeWarningLimit: 2000, 
   },
 
   server: {
