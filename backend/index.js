@@ -21,11 +21,10 @@ const __dirname = path.dirname(__filename);
 
 connectDB();
 
-// --- 🛠️ DYNAMIC CORS FIX ---
-// Isme humne placeholders hata diye hain. Ye ab request ke origin ko check karega.
+// 🛠️ DYNAMIC CORS: Placeholders ki jagah real production URLs
 const allowedOrigins = [
-    process.env.FRONTEND_URL, // Vercel User Link (Render Env Settings mein add karna)
-    process.env.ADMIN_URL,    // Vercel Admin Link (Render Env Settings mein add karna)
+    process.env.FRONTEND_URL, // Render settings mein apna User Vercel link dalo
+    process.env.ADMIN_URL,    // Render settings mein apna Admin Vercel link dalo
     "http://localhost:5173",
     "http://localhost:5174"
 ];
@@ -35,7 +34,7 @@ app.use(cors({
         if (!origin || allowedOrigins.includes(origin)) {
             callback(null, true);
         } else {
-            callback(new Error('CORS Error: Origin not allowed by OneCart'));
+            callback(new Error('CORS Error: Origin not allowed'));
         }
     },
     credentials: true,
