@@ -10,25 +10,23 @@ import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 function App() {
-  const { adminData, getAdmin } = useContext(adminDataContext);
+  const context = useContext(adminDataContext);
+  
+  // Safe check for context to prevent white screen
+  if (!context) {
+    return <div className="text-white bg-[#0c2025] h-screen flex items-center justify-center">Context Loading Error...</div>;
+  }
+
+  const { adminData, getAdmin } = context;
   const [checkingAuth, setCheckingAuth] = useState(true);
 
   useEffect(() => {
-    const verifyAdmin = async () => {
-      try {
-        // If we don't have adminData, try to fetch it from the server cookie
-        if (!adminData && getAdmin) {
-          await getAdmin();
-        }
-      } catch (error) {
-        console.error("Auth check failed", error);
-      } finally {
-        // Stop the loading spinner
-        setCheckingAuth(false);
-      }
+    const verify = async () => {
+      await getAdmin();
+      setCheckingAuth(false);
     };
-    verifyAdmin();
-  }, []); // Only run once on mount
+    verify();
+  }, []);
 
   if (checkingAuth) {
     return (
@@ -42,21 +40,19 @@ function App() {
     <>
       <ToastContainer position="top-right" autoClose={3000} />
       <Routes>
-        {/* Protected Routing Logic */}
+        {/* If Not Logged In */}
         {!adminData ? (
-          // Case 1: Not logged in -> Show ONLY Login page
           <>
             <Route path="/login" element={<Login />} />
             <Route path="*" element={<Navigate to="/login" />} />
           </>
         ) : (
-          // Case 2: Logged in -> Show Admin Dashboard
+          /* If Logged In */
           <>
             <Route path='/' element={<Home />} />
             <Route path='/add' element={<Add />} />
             <Route path='/lists' element={<Lists />} />
             <Route path='/orders' element={<Orders />} />
-            {/* Redirect /login to home if they are already logged in */}
             <Route path='/login' element={<Navigate to="/" />} />
             <Route path="*" element={<Navigate to="/" />} />
           </>
@@ -66,4 +62,4 @@ function App() {
   )
 }
 
-export default App
+export default App;

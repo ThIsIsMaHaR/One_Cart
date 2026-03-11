@@ -4,21 +4,21 @@ import { toast } from "react-toastify";
 
 export const adminDataContext = createContext();
 
+// Axios default settings - Essential for cookies and sessions
+axios.defaults.withCredentials = true;
+
 const AdminContextProvider = (props) => {
     const [adminData, setAdminData] = useState(null);
     
-    // --- THE FIX ---
-    // If the Admin is served from the same Render service, we use an empty string.
-    // This forces the request to stay on the same domain (No CORS issues!).
-    const backendUrl = ""; 
+    // Yahan hum Environment Variable use kar rahe hain. 
+    // Vercel Settings mein VITE_API_URL zaroor add karna (e.g., https://your-app.onrender.com)
+    const backendUrl = import.meta.env.VITE_API_URL || ""; 
 
     // 1. Admin Login Function
     const loginAdmin = async (email, password) => {
         try {
-            // Note: URL becomes "/api/auth/adminlogin"
             const { data } = await axios.post(`${backendUrl}/api/auth/adminlogin`, 
-                { email, password }, 
-                { withCredentials: true }
+                { email, password }
             );
 
             if (data.success) {
@@ -36,10 +36,11 @@ const AdminContextProvider = (props) => {
 
     // 2. Function to fetch Admin Profile
     const getAdmin = async () => {
-    try {
-        const { data } = await axios.get(`${backendUrl}/api/auth/getadmin`, { 
-            withCredentials: true // <--- THIS MUST BE HERE
-        });
+        // Agar backendUrl set nahi hai, toh call nahi bhejenge
+        if (!backendUrl) return;
+
+        try {
+            const { data } = await axios.get(`${backendUrl}/api/auth/getadmin`);
 
             if (data.success) {
                 setAdminData(data.adminData);
@@ -55,10 +56,7 @@ const AdminContextProvider = (props) => {
     // 3. Logout Function
     const logoutAdmin = async () => {
         try {
-            // Updated to /api/auth/logout (lowercase 'o' to match our authRoutes.js)
-            const { data } = await axios.post(`${backendUrl}/api/auth/logout`, {}, { 
-                withCredentials: true 
-            });
+            const { data } = await axios.post(`${backendUrl}/api/auth/logout`);
             if (data.success) {
                 setAdminData(null);
                 toast.success("Logged out successfully");
