@@ -1,124 +1,84 @@
-import React, { useContext, useState, useEffect } from 'react'
-import logo from '../assets/logo.png'
-import { IoEyeOutline, IoEye } from "react-icons/io5";
-import axios from 'axios'
+import React, { useState, useContext } from 'react';
 import { adminDataContext } from '../context/AdminContext';
-import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import Loading from '../component/Loading'; // Ensure this path is correct
 
 function Login() {
-  const [show, setShow] = useState(false)
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [loading, setLoading] = useState(false)
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [localLoading, setLocalLoading] = useState(false);
 
-  // Get shared state and functions from AdminContext
-  const { adminData, getAdmin, backendUrl } = useContext(adminDataContext)
-  const navigate = useNavigate()
+  // Context se login functions nikaalein
+  const { loginAdmin, getAdmin } = useContext(adminDataContext);
 
-  // 1. Redirect to Dashboard if adminData becomes available globally
-  useEffect(() => {
-    if (adminData) {
-      navigate("/")
-    }
-  }, [adminData, navigate])
-
-  const AdminLogin = async (e) => {
-    e.preventDefault()
-    setLoading(true)
+  const onSubmitHandler = async (e) => {
+    e.preventDefault();
+    setLocalLoading(true);
 
     try {
-      // Logic: Using backendUrl (which is "" for same-domain)
-      const result = await axios.post(`${backendUrl}/api/auth/adminlogin`, 
-        { email, password }, 
-        { withCredentials: true }
-      )
-      
-      if (result.data.success) {
-        console.log("Login Success:", result.data)
-        toast.success("Admin Login Successful")
-        
-        // 2. Fetch the latest admin data to update the Context state
-        if (getAdmin) {
-          await getAdmin()
-        }
-        
-        // 3. FORCE NAVIGATION: Don't wait for the useEffect
-        // If the state update is slow, this moves the user immediately
-        navigate("/")
-        
-      } else {
-        toast.error(result.data.message || "Invalid Credentials")
+      const success = await loginAdmin(email, password);
+      if (success) {
+        // Login success ke baad admin data fetch karna zaroori hai
+        // taaki App.jsx mein 'adminData' update ho aur buffer ruk jaye
+        await getAdmin(); 
       }
     } catch (error) {
-      console.error("Detailed Login Error:", error.response?.data || error.message)
-      const errorMsg = error.response?.data?.message || "Admin Login Failed"
-      toast.error(errorMsg);
+      console.error("Login UI Error:", error);
+      toast.error("An unexpected error occurred");
     } finally {
-      setLoading(false)
+      setLocalLoading(false);
     }
-  }
+  };
 
   return (
-    <div className='w-[100vw] h-[100vh] bg-gradient-to-l from-[#141414] to-[#0c2025] text-[white] flex flex-col items-center justify-start'>
-      {/* Header / Logo Section */}
-      <div className='w-[100%] h-[80px] flex items-center justify-start px-[30px] gap-[10px] cursor-pointer' >
-        <img className='w-[40px]' src={logo} alt="logo" />
-        <h1 className='text-[22px] font-sans '>OneCart Admin</h1>
-      </div>
+    <div className='w-[100vw] h-[100vh] bg-gradient-to-l from-[#141414] to-[#0c2025] flex items-center justify-center p-4'>
+      <div className='w-full max-w-[450px] bg-[#1a1a1a]/80 backdrop-blur-md border border-gray-800 p-8 md:p-10 rounded-2xl shadow-2xl'>
+        
+        <div className='flex flex-col items-center mb-8'>
+          <h1 className='text-4xl font-bold text-white tracking-tight'>One<span className='text-[#46d1f7]'>Cart</span></h1>
+          <p className='text-gray-400 mt-2 text-sm uppercase tracking-widest'>Admin Control Panel</p>
+        </div>
 
-      {/* Hero Section */}
-      <div className='w-[100%] h-[100px] flex items-center justify-center flex-col gap-[10px]'>
-        <span className='text-[25px] font-semibold'>Login Page</span>
-        <span className='text-[16px]'>Welcome back, please enter your admin credentials</span>
-      </div>
-
-      {/* Login Card */}
-      <div className='max-w-[600px] w-[90%] h-[400px] bg-[#00000025] border-[1px] border-[#96969635] backdrop-blur-2xl rounded-lg shadow-lg flex items-center justify-center '>
-        <form onSubmit={AdminLogin} className='w-[90%] h-[90%] flex flex-col items-center justify-start gap-[20px]'>
-          <div className='w-[90%] h-[400px] flex flex-col items-center justify-center gap-[15px] relative'>
-            
-            {/* Email Input */}
+        <form onSubmit={onSubmitHandler} className='flex flex-col gap-5'>
+          <div className='flex flex-col gap-2'>
+            <label className='text-gray-300 text-sm font-medium ml-1'>Admin Email</label>
             <input 
               type="email" 
-              className='w-[100%] h-[50px] border-[2px] border-[#96969635] rounded-lg shadow-lg bg-transparent placeholder-[#ffffffc7] px-[20px] font-semibold focus:outline-none focus:border-[#6060f5]' 
-              placeholder='Admin Email' 
-              required  
-              onChange={(e) => setEmail(e.target.value)} 
+              placeholder='Enter your email'
               value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className='w-full bg-[#0c2025] border border-gray-700 p-3.5 rounded-xl text-white focus:outline-none focus:border-[#46d1f7] transition-all'
+              required 
             />
-            
-            {/* Password Input with Toggle */}
-            <div className='w-full relative'>
-              <input 
-                type={show ? "text" : "password"} 
-                className='w-[100%] h-[50px] border-[2px] border-[#96969635] rounded-lg shadow-lg bg-transparent placeholder-[#ffffffc7] px-[20px] font-semibold focus:outline-none focus:border-[#6060f5]' 
-                placeholder='Password' 
-                required 
-                onChange={(e) => setPassword(e.target.value)} 
-                value={password}
-              />
-              <div 
-                className='absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer text-gray-400 hover:text-white transition-colors'
-                onClick={() => setShow(prev => !prev)}
-              >
-                {show ? <IoEye size={20} /> : <IoEyeOutline size={20} />}
-              </div>
-            </div>
-
-            {/* Login Button */}
-            <button 
-              type="submit"
-              disabled={loading}
-              className='w-[100%] h-[50px] bg-[#6060f5] hover:bg-[#4e4ef0] transition-all rounded-lg flex items-center justify-center mt-[20px] text-[17px] font-semibold disabled:opacity-50 disabled:cursor-not-allowed shadow-md'
-            >
-              {loading ? "Verifying..." : "Login to Dashboard"}
-            </button>
           </div>
+
+          <div className='flex flex-col gap-2'>
+            <label className='text-gray-300 text-sm font-medium ml-1'>Password</label>
+            <input 
+              type="password" 
+              placeholder='Enter your password'
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className='w-full bg-[#0c2025] border border-gray-700 p-3.5 rounded-xl text-white focus:outline-none focus:border-[#46d1f7] transition-all'
+              required 
+            />
+          </div>
+
+          <button 
+            type="submit" 
+            disabled={localLoading}
+            className='w-full mt-4 py-4 bg-[#46d1f7] text-black font-bold rounded-xl hover:bg-[#3bb8db] transform active:scale-95 transition-all flex items-center justify-center'
+          >
+            {localLoading ? <Loading /> : "LOG IN TO DASHBOARD"}
+          </button>
         </form>
+
+        <p className='text-center text-gray-500 text-xs mt-8'>
+          &copy; 2026 OneCart E-commerce System
+        </p>
       </div>
     </div>
-  )
+  );
 }
 
-export default Login
+export default Login;
