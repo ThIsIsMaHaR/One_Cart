@@ -2,7 +2,7 @@ import { createContext, useState, useEffect } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
 
-// 1. Context ko hamesha issi naam se export karein
+// 1. Context ka naam hamesha yahi rakhein
 export const adminDataContext = createContext();
 
 axios.defaults.withCredentials = true;
@@ -16,43 +16,20 @@ const AdminContextProvider = (props) => {
             const { data } = await axios.post(`${backendUrl}/api/auth/adminlogin`, { email, password });
             if (data.success) {
                 setAdminData(data.adminData); 
-                toast.success("Welcome, Admin!");
                 return true;
             }
         } catch (error) {
-            console.error("Login detail:", error);
-            const errorMsg = error.response?.data?.message || "Login Failed";
-            toast.error(errorMsg);
+            toast.error(error.response?.data?.message || "Login Failed");
             return false;
         }
     };
 
-    const getAdmin = async () => {
-        if (!backendUrl) return;
-        try {
-            const { data } = await axios.get(`${backendUrl}/api/auth/getadmin`);
-            if (data.success) {
-                setAdminData(data.adminData);
-            } else {
-                setAdminData(null);
-            }
-        } catch (error) {
-            setAdminData(null);
-        }
-    };
-
-    useEffect(() => {
-        getAdmin();
-    }, []);
-
-    // 🚀 Yahan humne serverUrl add kiya hai jo aapka component dhoond raha hai
     const value = {
-        adminData,
-        setAdminData,
+        adminData, 
+        setAdminData, 
         loginAdmin,
-        getAdmin,
         backendUrl,
-        serverUrl: backendUrl 
+        serverUrl: backendUrl // 👈 Yeh sabse important hai, isi ki wajah se blank screen aa rahi thi
     };
 
     return (
