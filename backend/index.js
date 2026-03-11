@@ -21,10 +21,10 @@ const __dirname = path.dirname(__filename);
 
 connectDB();
 
-// 🛠️ DYNAMIC CORS: Placeholders ki jagah real production URLs
+// --- 🛠️ DYNAMIC CORS FIX (REAL URLS ADDED) ---
 const allowedOrigins = [
-    process.env.FRONTEND_URL, // Render settings mein apna User Vercel link dalo
-    process.env.ADMIN_URL,    // Render settings mein apna Admin Vercel link dalo
+    "https://one-cart-flax.vercel.app",        // Aapka User Site
+    "https://one-cart-admin.vercel.app",       // Aapka Admin Panel (Update if needed)
     "http://localhost:5173",
     "http://localhost:5174"
 ];
@@ -55,7 +55,7 @@ app.use('/api/order', orderRouter);
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-app.get('/', (req, res) => res.send("🚀 OneCart Backend is Live and Connected!"));
+app.get('/', (req, res) => res.send("🚀 OneCart API is Live and Connected!"));
 
 app.listen(port, '0.0.0.0', () => {
     console.log(`🚀 Server running on port ${port}`);
