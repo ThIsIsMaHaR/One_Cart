@@ -2,13 +2,14 @@ import { createContext, useState, useEffect } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
 
-// 1. ISSE DHAYAN SE DEKHO: Named export for the context
 export const adminDataContext = createContext();
 
 axios.defaults.withCredentials = true;
 
-const AdminContextProvider = ({ children }) => {
+const AdminContextProvider = (props) => {
     const [adminData, setAdminData] = useState(null);
+    const [loading, setLoading] = useState(true); // 🚀 NEW: Add loading state
+
     const backendUrl = import.meta.env.VITE_API_URL || "https://onecart-backend-3jhl.onrender.com"; 
 
     const loginAdmin = async (email, password) => {
@@ -16,7 +17,7 @@ const AdminContextProvider = ({ children }) => {
             const { data } = await axios.post(`${backendUrl}/api/auth/adminlogin`, { email, password });
             if (data.success) {
                 setAdminData(data.adminData); 
-                toast.success("Login Successful");
+                toast.success("Welcome, Admin!");
                 return true;
             }
         } catch (error) {
@@ -25,20 +26,41 @@ const AdminContextProvider = ({ children }) => {
         }
     };
 
+    const getAdmin = async () => {
+        setLoading(true); // Start loading
+        try {
+            const { data } = await axios.get(`${backendUrl}/api/auth/getadmin`);
+            if (data.success) {
+                setAdminData(data.adminData);
+            } else {
+                setAdminData(null);
+            }
+        } catch (error) {
+            setAdminData(null);
+        } finally {
+            setLoading(false); // Stop loading regardless of success/fail
+        }
+    };
+
+    useEffect(() => {
+        getAdmin();
+    }, []);
+
     const value = {
-        adminData, 
-        setAdminData, 
+        adminData,
+        setAdminData,
         loginAdmin,
+        getAdmin,
         backendUrl,
-        serverUrl: backendUrl 
+        serverUrl: backendUrl,
+        loading // 🚀 Pass loading state to components
     };
 
     return (
         <adminDataContext.Provider value={value}>
-            {children}
+            {props.children}
         </adminDataContext.Provider>
     );
 };
 
-// 2. Default export for the Provider
 export default AdminContextProvider;
