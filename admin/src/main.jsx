@@ -3,15 +3,14 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.jsx'
 import { BrowserRouter } from 'react-router-dom'
-import AdminContext from './context/AdminContext.jsx'
+import AdminContextProvider from './context/AdminContext.jsx' // 👈 Context name updated
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    {/* BrowserRouter bina basename ke taaki '/' se shuru ho sake */}
     <BrowserRouter>
-      <AdminContext>
+      <AdminContextProvider> 
         <App />
-      </AdminContext>
+      </AdminContextProvider>
     </BrowserRouter>
   </StrictMode>
 )
