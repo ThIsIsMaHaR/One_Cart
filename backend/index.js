@@ -19,21 +19,26 @@ const port = process.env.PORT || 10000;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// 1. Database Connection
 connectDB();
 
-// --- 🛠️ DYNAMIC CORS FIX (REAL URLS ADDED) ---
+// 2. FINAL CORS CONFIGURATION (Both Frontend & Admin Fixed)
 const allowedOrigins = [
-    "https://one-cart-flax.vercel.app",        // Aapka User Site
-    "https://one-cart-admin.vercel.app",       // Aapka Admin Panel (Update if needed)
+    "https://one-cart-flax.vercel.app",        // Aapka User Site (Working)
+    "https://one-cart-admin-smoky.vercel.app", // Aapka Naya Admin Panel (Fixing Now)
     "http://localhost:5173",
     "http://localhost:5174"
 ];
 
 app.use(cors({
     origin: function (origin, callback) {
-        if (!origin || allowedOrigins.includes(origin)) {
+        // Allow requests with no origin (like mobile apps)
+        if (!origin) return callback(null, true);
+        
+        if (allowedOrigins.indexOf(origin) !== -1) {
             callback(null, true);
         } else {
+            console.log("CORS Blocked for:", origin);
             callback(new Error('CORS Error: Origin not allowed'));
         }
     },
@@ -42,11 +47,12 @@ app.use(cors({
     allowedHeaders: ["Content-Type", "Authorization", "token", "adminToken"]
 }));
 
+// 3. MIDDLEWARES
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(express.json());
 app.use(cookieParser());
 
-// API Routes
+// 4. API ROUTES
 app.use('/api/auth', authRouter);
 app.use('/api/user', userRouter);
 app.use('/api/product', productRouter);
@@ -55,8 +61,10 @@ app.use('/api/order', orderRouter);
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-app.get('/', (req, res) => res.send("🚀 OneCart API is Live and Connected!"));
+// 5. Root Route
+app.get('/', (req, res) => res.send("🚀 OneCart API is Live and Fully Connected!"));
 
+// 6. Start Server
 app.listen(port, '0.0.0.0', () => {
     console.log(`🚀 Server running on port ${port}`);
 });
