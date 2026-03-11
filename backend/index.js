@@ -21,20 +21,21 @@ const __dirname = path.dirname(__filename);
 
 connectDB();
 
-// 1. DYNAMIC CORS (Sabse important fix)
+// --- 🛠️ DYNAMIC CORS FIX ---
+// Isme humne placeholders hata diye hain. Ye ab request ke origin ko check karega.
 const allowedOrigins = [
-    "https://your-user-frontend.vercel.app", // Apna sahi Vercel link dalo
-    "https://your-admin-panel.vercel.app",   // Apna sahi Admin Vercel link dalo
+    process.env.FRONTEND_URL, // Vercel User Link (Render Env Settings mein add karna)
+    process.env.ADMIN_URL,    // Vercel Admin Link (Render Env Settings mein add karna)
     "http://localhost:5173",
     "http://localhost:5174"
 ];
 
 app.use(cors({
     origin: function (origin, callback) {
-        if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+        if (!origin || allowedOrigins.includes(origin)) {
             callback(null, true);
         } else {
-            callback(new Error('CORS Error: This origin is not allowed'));
+            callback(new Error('CORS Error: Origin not allowed by OneCart'));
         }
     },
     credentials: true,
@@ -46,7 +47,7 @@ app.use(helmet({ contentSecurityPolicy: false }));
 app.use(express.json());
 app.use(cookieParser());
 
-// 2. API ROUTES
+// API Routes
 app.use('/api/auth', authRouter);
 app.use('/api/user', userRouter);
 app.use('/api/product', productRouter);
@@ -55,8 +56,7 @@ app.use('/api/order', orderRouter);
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// 3. Simple Health Check
-app.get('/', (req, res) => res.send("OneCart API is Running..."));
+app.get('/', (req, res) => res.send("🚀 OneCart Backend is Live and Connected!"));
 
 app.listen(port, '0.0.0.0', () => {
     console.log(`🚀 Server running on port ${port}`);

@@ -1,34 +1,16 @@
 import User from "../models/userModel.js";
-import validator from "validator";
 import bcrypt from "bcryptjs";
 import { genToken } from "../config/token.js";
 import jwt from 'jsonwebtoken';
 
 const cookieOptions = {
     httpOnly: true,
-    secure: true, // Always true for Render/Vercel (HTTPS)
-    sameSite: "none", // Required for cross-site cookies
+    secure: true,      // Required for HTTPS (Production)
+    sameSite: "none",  // Required for Cross-Domain (Vercel to Render)
     maxAge: 7 * 24 * 60 * 60 * 1000 
 };
 
-export const registration = async (req, res) => {
-    try {
-        const { name, email, password } = req.body;
-        const existUser = await User.findOne({ email });
-        if (existUser) return res.status(400).json({ success: false, message: "User already exists" });
-        
-        const hashPassword = await bcrypt.hash(password, 10);
-        const user = await User.create({ name, email, password: hashPassword });
-        
-        const token = genToken(user._id);
-        res.cookie("token", token, cookieOptions);
-
-        return res.status(201).json({ success: true, message: "Account created", user: { name, email } });
-    } catch (error) {
-        return res.status(500).json({ success: false, message: error.message });
-    }
-};
-
+// --- USER LOGIN ---
 export const login = async (req, res) => {
     try {
         const { email, password } = req.body;
@@ -36,23 +18,30 @@ export const login = async (req, res) => {
         if (!user || !(await bcrypt.compare(password, user.password))) {
             return res.status(400).json({ success: false, message: "Invalid credentials" });
         }
-
         const token = genToken(user._id);
         res.cookie("token", token, cookieOptions);
-
-        return res.status(200).json({ success: true, message: "Login successful", user: { name: user.name, email } });
+        return res.status(200).json({ 
+            success: true, 
+            message: "User Login successful", 
+            user: { _id: user._id, name: user.name, email: user.email } 
+        });
     } catch (error) {
         return res.status(500).json({ success: false, message: error.message });
     }
 };
 
+// --- ADMIN LOGIN ---
 export const adminLogin = async (req, res) => {
     try {
         const { email, password } = req.body;
         if (email === process.env.ADMIN_EMAIL && password === process.env.ADMIN_PASSWORD) {
             const token = jwt.sign({ email }, process.env.JWT_SECRET, { expiresIn: '7d' });
             res.cookie("adminToken", token, cookieOptions);
-            return res.status(200).json({ success: true, message: "Admin Logged In", adminData: { email } });
+            return res.status(200).json({ 
+                success: true, 
+                message: "Admin Login successful", 
+                adminData: { email } 
+            });
         }
         return res.status(401).json({ success: false, message: "Invalid Admin Credentials" });
     } catch (error) {
@@ -60,12 +49,7 @@ export const adminLogin = async (req, res) => {
     }
 };
 
-export const logOut = async (req, res) => {
-    res.clearCookie("token", cookieOptions);
-    res.clearCookie("adminToken", cookieOptions);
-    return res.status(200).json({ success: true, message: "Logged out" });
-};
-
+// --- GET ADMIN PROFILE ---
 export const getAdmin = async (req, res) => {
     try {
         const token = req.cookies.adminToken;
@@ -75,4 +59,11 @@ export const getAdmin = async (req, res) => {
     } catch (error) {
         return res.status(401).json({ success: false });
     }
+};
+
+// --- LOGOUT (BOTH) ---
+export const logOut = async (req, res) => {
+    res.clearCookie("token", cookieOptions);
+    res.clearCookie("adminToken", cookieOptions);
+    return res.status(200).json({ success: true, message: "Logged out successfully" });
 };
